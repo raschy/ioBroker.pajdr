@@ -40,10 +40,16 @@ class ApiManager {
   tokenFilePath = "token.txt";
   storedToken = null;
   tokenExpiry = null;
+  /**
+   *
+   */
   constructor(email, password) {
     this.email = email;
     this.password = password;
   }
+  /**
+   *
+   */
   async getToken() {
     const baseUrl = "https://connect.paj-gps.de/api/v1/login?email=";
     const urlBinder = "&password=";
@@ -56,7 +62,7 @@ class ApiManager {
       }
     });
     if (!response.ok) {
-      throw new Error("Login failed: " + response.statusText);
+      throw new Error(`Login failed: ${response.statusText}`);
     }
     const data = await response.json();
     this.storedToken = data.success.token;
@@ -64,18 +70,27 @@ class ApiManager {
     console.log(this.tokenExpiry, this.timestampToDate(this.tokenExpiry));
     return data.success.token;
   }
+  /**
+   *
+   */
   async saveToken(token) {
     await import_fs.default.promises.writeFile(this.tokenFilePath, token, "utf8");
   }
+  /**
+   *
+   */
   async loadToken() {
     try {
       const token = await import_fs.default.promises.readFile(this.tokenFilePath, "utf8");
       this.storedToken = token;
       return token;
     } catch (error) {
-      throw new Error("Token konnte nicht gelesen werden: " + error.message);
+      throw new Error(`Token konnte nicht gelesen werden: ${error.message}`);
     }
   }
+  /**
+   *
+   */
   async getCustomer() {
     const url = "https://connect.paj-gps.de/api/v1/customer";
     console.log(`[getCustomer] URL: ${url}`);
@@ -88,7 +103,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getCustomer] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getCustomer] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -104,6 +119,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getDevice() {
     const url = "https://connect.paj-gps.de/api/v1/device";
     console.log(`[getDevice] URL: ${url}`);
@@ -116,7 +134,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getDevice] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getDevice] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -131,6 +149,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getCarDeviceData() {
     const url = "https://connect.paj-gps.de/api/v1/sdevice/car";
     console.log(`[getCarDeviceData] URL: ${url}`);
@@ -143,7 +164,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getCarDeviceData] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getCarDeviceData] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -158,6 +179,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getSingleCarDeviceData(carId) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/sdevice/car/";
     const url = [baseUrl, carId].join("");
@@ -171,7 +195,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getSingleCarDeviceData] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getSingleCarDeviceData] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -186,6 +210,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getGeofences() {
     const url = "https://connect.paj-gps.de/api/v1/geofences";
     console.log(`[getGeofences] URL: ${url}`);
@@ -200,7 +227,7 @@ class ApiManager {
         body: '{ "deviceIDs": [1312315] }'
       });
       if (!response.ok) {
-        throw new Error("[getGeofences] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getGeofences] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -215,6 +242,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getRoute(deviceId, timestamp) {
     const url = "https://api.paj-gps.com/api/v1/route/export";
     console.log(`[getRoute] URL: ${url}`);
@@ -256,7 +286,7 @@ class ApiManager {
         body: JSON.stringify(body)
       });
       if (!response.ok) {
-        throw new Error("[getRoute] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getRoute] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       return response.arrayBuffer();
     } catch (error) {
@@ -270,6 +300,9 @@ class ApiManager {
     }
   }
   //https://connect.paj-gps.de/api/v1/logbook/getAllRoutes/2937042
+  /**
+   *
+   */
   async getAllRoutes(deviceId) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/logbook/getAllRoutes/";
     const url = [baseUrl, deviceId].join("");
@@ -283,7 +316,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getAllRoutes] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getAllRoutes] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.data;
@@ -299,6 +332,9 @@ class ApiManager {
     }
   }
   //https://connect.paj-gps.de/api/v1/trackerdata/1312315/date_range?dateStart=1730970000000&dateEnd=1730970086399&wifi=1&gps=1
+  /**
+   *
+   */
   async getTrackerData(deviceId, timestamp) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/trackerdata/";
     const url = [
@@ -320,7 +356,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getTrackerData] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getTrackerData] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -336,15 +372,12 @@ class ApiManager {
     }
   }
   //https://connect.paj-gps.de/api/v1/trackerdata/1312315/last_points?lastPoints=10&gps=1&wifi=0
+  /**
+   *
+   */
   async getTrackerDataLast(deviceId, points) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/trackerdata/";
-    const url = [
-      baseUrl,
-      deviceId,
-      "/last_points?lastPoints=",
-      points,
-      "&wifi=0&gps=1"
-    ].join("");
+    const url = [baseUrl, deviceId, "/last_points?lastPoints=", points, "&wifi=0&gps=1"].join("");
     console.log(`[getTrackerDataLast] URL: ${url}`);
     try {
       const response = await (0, import_node_fetch.default)(url, {
@@ -355,7 +388,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getTrackerDataLast] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getTrackerDataLast] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -371,6 +404,9 @@ class ApiManager {
     }
   }
   //######
+  /**
+   *
+   */
   async getNotifications(carId, alertType) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/notifications/";
     const url = [baseUrl, carId, "?alertType=", alertType, "&isRead=0"].join("");
@@ -384,7 +420,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getNotifications] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getNotifications] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const data = await response.json();
       const dataSuccess = data.success;
@@ -400,6 +436,9 @@ class ApiManager {
     }
   }
   //https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1312315&startDate=1731715200&endDate=1731801500&dsType=mixTR
+  /**
+   *
+   */
   async getPdf_new(deviceId) {
     const url = "https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1312315&startDate=1731715200&endDate=1731801500&dsType=mixTR";
     console.log(`[getPdf] URL: ${url} ${deviceId}`);
@@ -412,7 +451,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getPdf] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getPdf] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const filePath = "pajDemo2.pdf";
       const outputPath = path.resolve(filePath);
@@ -431,6 +470,9 @@ class ApiManager {
     }
   }
   // https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1287648&startDate=1721772000&endDate=1721858400&dsType=mixTR
+  /**
+   *
+   */
   async getPdf_X(deviceId) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=";
     const tempUrl = "&startDate=1731715200&endDate=1731801599";
@@ -446,7 +488,7 @@ class ApiManager {
         }
       });
       if (!response.ok) {
-        throw new Error("[getPdf] Datenabruf fehlgeschlagen: " + response.statusText);
+        throw new Error(`[getPdf] Datenabruf fehlgeschlagen: ${response.statusText}`);
       }
       const filePath = "pajDemo2.pdf";
       const outputPath = path.resolve(filePath);
@@ -464,6 +506,9 @@ class ApiManager {
       }
     }
   }
+  /**
+   *
+   */
   async getPdf(deviceId, timestamp) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=";
     const url = [
@@ -515,9 +560,12 @@ class ApiManager {
     });
     return response.arrayBuffer();
     if (!response.ok) {
-      throw new Error("[getGeofences] Datenabruf fehlgeschlagen: " + response.statusText);
+      throw new Error(`[getGeofences] Datenabruf fehlgeschlagen: ${response.statusText}`);
     }
   }
+  /**
+   *
+   */
   async getPdf_old(deviceId) {
     const baseUrl = "https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=";
     const tempUrl = "&startDate=1720994400&endDate=1721080800";
@@ -562,22 +610,34 @@ class ApiManager {
     });
     return response.arrayBuffer();
     if (!response.ok) {
-      throw new Error("[getGeofences] Datenabruf fehlgeschlagen: " + response.statusText);
+      throw new Error(`[getGeofences] Datenabruf fehlgeschlagen: ${response.statusText}`);
     }
   }
   // Helper
+  /**
+   *
+   */
   timestampToDateDE(unixTimestamp) {
     const date = new Date(unixTimestamp);
     return date.toLocaleString("de-DE");
   }
+  /**
+   *
+   */
   timestampToDate(unixTimestamp) {
     console.log(unixTimestamp);
     return new Date(unixTimestamp);
   }
+  /**
+   *
+   */
   todayTimestamp() {
     const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, -14);
     return new Date(today).getTime();
   }
+  /**
+   *
+   */
   datestringToTimestamp(d) {
     const val = d.split("-");
     const _year = parseInt(val[0]);
@@ -586,6 +646,9 @@ class ApiManager {
     const calculatedDate = new Date(_year, _month - 1, _date, 0, 0, 0, 0);
     return calculatedDate.getTime();
   }
+  /**
+   *
+   */
   formatDate(d) {
     const year = d.getFullYear();
     const month = (d.getMonth() + 1).toString().padStart(2, "0");

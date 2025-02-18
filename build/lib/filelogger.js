@@ -42,9 +42,9 @@ async function appendDataToFile(fileObj, data) {
     if (error.code === "EACCES") {
       console.log("Zugriffsfehler: Sie haben keine Berechtigung zum Anh\xE4ngen von Daten an die Datei.");
     } else if (error.code === "ENOENT") {
-      console.log("Datei oder Verzeichnis nicht gefunden: " + error.path);
+      console.log(`Datei oder Verzeichnis nicht gefunden: ${error.path}`);
     } else if (error.code === "ENOTDIR") {
-      console.log("Pfad ist kein Verzeichnis: " + error.path);
+      console.log(`Pfad ist kein Verzeichnis: ${error.path}`);
     } else {
       console.log("Ein unbekannter Fehler ist aufgetreten:");
     }

@@ -38,7 +38,7 @@ class Pajdr extends utils.Adapter {
 		const user_pass: string = this.config.password;
 		//let updateInterval: number = 10; //this.config.updateIntervall;
 		//
-		const executionInterval: number = 360;
+		const executionInterval = 360;
 		//
 		const dataDir: string = utils.getAbsoluteDefaultDataDir();
 		console.log(`DIR ${dataDir}`);
@@ -103,7 +103,7 @@ class Pajdr extends utils.Adapter {
 			const geo = await client.getGeofences();
 			//console.log('[Geofence] Abgerufene Daten: ', geo);
 			console.log('[Geofence] Anzahl Fences: ', geo.length);
-			geo.forEach((fence) => console.log(fence.name));
+			geo.forEach(fence => console.log(fence.name));
 			//fs.writeFile('pajGeoFences.txt', Buffer.from(geo));
 			//
 			// API-Anfrage für AllRoutes
@@ -146,6 +146,9 @@ class Pajdr extends utils.Adapter {
 			console.log('[TrackerDataLast] Abgerufene Daten: ', tracksLast);
 			console.log('[TrackerDataLast] Anzahl Tracks: ', tracksLast.length);
 			//
+			const battery: number = tracksLast[0].battery;
+			console.log('[SingleCarDeviceData] Batterie-Stand: ', battery);
+			//
 			// API-Anfrage für Notifications
 			//const notfs3 = await client.getNotifications(idDevice, 3); // Radiusalarm
 			//console.log('[Notifications] Abgerufene Daten: ', notfs3);
@@ -174,6 +177,8 @@ class Pajdr extends utils.Adapter {
 
 	/**
 	 * Is called when adapter shuts down - callback has to be called under any circumstances!
+	 *
+	 * @param callback
 	 */
 	private onUnload(callback: () => void): void {
 		try {
@@ -181,7 +186,9 @@ class Pajdr extends utils.Adapter {
 			// clearTimeout(timeout1);
 			//## this.updateInterval && clearInterval(this.updateInterval);
 			// clearTimeout(timeout2);
-			if (this.dataUpdateInterval) clearTimeout(this.dataUpdateInterval);
+			if (this.dataUpdateInterval) {
+				clearTimeout(this.dataUpdateInterval);
+			}
 			// ...
 			// clearInterval(interval1);
 

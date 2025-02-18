@@ -81,6 +81,8 @@ class Pajdr extends utils.Adapter {
       const tracksLast = await client.getTrackerDataLast(idDevice, 5);
       console.log("[TrackerDataLast] Abgerufene Daten: ", tracksLast);
       console.log("[TrackerDataLast] Anzahl Tracks: ", tracksLast.length);
+      const battery = tracksLast[0].battery;
+      console.log("[SingleCarDeviceData] Batterie-Stand: ", battery);
       const pdfBuffer = await client.getPdf_new(idDevice);
       import_fs.promises.writeFile("pajData_03_241118.pdf", Buffer.from(pdfBuffer));
       console.log("[PDF getPdf] Abgerufene Daten: ", pdfBuffer);
@@ -93,11 +95,14 @@ class Pajdr extends utils.Adapter {
   //	#### Helper ####
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!
+   *
+   * @param callback
    */
   onUnload(callback) {
     try {
-      if (this.dataUpdateInterval)
+      if (this.dataUpdateInterval) {
         clearTimeout(this.dataUpdateInterval);
+      }
       callback();
     } catch (e) {
       callback();
