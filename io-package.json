@@ -1,0 +1,102 @@
+{
+	"common": {
+		"name": "pajdr",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"uk": "Початкова версія",
+				"zh-cn": "首次出版"
+			}
+		},
+		"title": "PAJ DataReader",
+		"titleLang": {
+			"en": "PAJ DataReader",
+			"de": "PAJ DataReader",
+			"ru": "PAJ DataReader",
+			"pt": "Leitor de dados PAJ",
+			"nl": "PAJ-gegevenslezer",
+			"fr": "Lecteur de données PAJ",
+			"it": "Lettore dati PAJ",
+			"es": "Lector de datos PAJ",
+			"pl": "Czytnik danych PAJ",
+			"uk": "PAJ DataReader",
+			"zh-cn": "PAJ数据读取器"
+		},
+		"desc": {
+			"en": "Read Data from PAJ-GPS-Portal",
+			"de": "Daten vom PAJ-GPS-Portal lesen",
+			"ru": "Чтение данных с портала PAJ-GPS",
+			"pt": "Ler dados do Portal PAJ-GPS",
+			"nl": "Gegevens lezen van PAJ-GPS-Portal",
+			"fr": "Lire les données du portail PAJ-GPS",
+			"it": "Leggi i dati dal portale PAJ-GPS",
+			"es": "Leer datos del portal PAJ-GPS",
+			"pl": "Odczytaj dane z portalu PAJ-GPS",
+			"uk": "Читання даних з PAJ-GPS-порталу",
+			"zh-cn": "从 PAJ-GPS-Portal 读取数据"
+		},
+		"authors": [
+			"raschy <raschy@gmx.de>"
+		],
+		"keywords": [
+			"ioBroker",
+			"template",
+			"Smart Home",
+			"home automation"
+		],
+		"license": "MIT",
+		"licenseInformation": {
+			"type": "free",
+			"license": "MIT"
+		},
+		"platform": "Javascript/Node.js",
+		"main": "build/main.js",
+		"icon": "pajdr.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/raschy/ioBroker.pajdr/main/admin/pajdr.png",
+		"readme": "https://github.com/raschy/ioBroker.pajdr/blob/main/README.md",
+		"loglevel": "info",
+		"tier": 3,
+		"mode": "daemon",
+		"type": "vehicle",
+		"compact": true,
+		"connectionType": "cloud",
+		"dataSource": "poll",
+		"adminUI": {
+			"config": "json"
+		},
+		"dependencies": [
+			{
+				"js-controller": ">=3.3.23"
+			}
+		],
+		"globalDependencies": [
+			{
+				"admin": ">=7.4.10"
+			}
+		]
+	},
+	"native": {
+		"email": "",
+		"password": ""
+	},
+	"protectedNative": [
+		"email",
+		"password"
+	],
+	"encryptedNative": [
+		"email",
+		"password"
+	],
+	"objects": [],
+	"instanceObjects": []
+}

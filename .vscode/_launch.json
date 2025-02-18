@@ -1,0 +1,61 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Launch Program",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"program": "${workspaceFolder}/build/main.js",
+			"outFiles": [
+				"${workspaceFolder}/**/*.js"
+			]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Programm starten",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"program": "${workspaceFolder}/src/main.ts",
+			"args": [
+				"--debug",
+				"0"
+			],
+			"outFiles": [
+				"${workspaceFolder}/.dev-server/default/node_modules/iobroker.pajdr/build/**/*.js"
+			]
+		},
+		{
+			"name": "Launch debug",
+			"program": "${workspaceFolder}/src/main.ts",
+			"env": {
+				"NODE_PATH": "${workspaceFolder}/.dev-server/default/node_modules"
+			},
+			"args": [
+				"--instance",
+				"0",
+				"--force",
+				"--logs",
+				"--debug"
+			],
+			"type": "node",
+			"request": "launch",
+			"stopOnEntry": true,
+			"console": "internalConsole",
+			"outputCapture": "std",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"outFiles": [
+				"${workspaceFolder}/.dev-server/default/node_modules/iobroker.pajdr/build/**/*.js"
+			]
+		}
+	]
+}

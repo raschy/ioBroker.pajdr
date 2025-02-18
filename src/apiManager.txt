@@ -1,0 +1,134 @@
+import fetch from 'node-fetch';
+
+interface TokenResponse {
+	success: {
+		token: string;
+	};
+	expires_in: number;
+}
+
+interface DeviceDataResponse {
+	// Define the structure of the device data response here
+	id: number;
+}
+
+class apiManager {
+	private apiBaseUrl: string;
+	private apiBaseUrlToken: string = 'https://connect.paj-gps.de/api/v1/login?email=';
+	private clientId: string;
+	private clientSecret: string;
+	private token: string | null = null;
+	private tokenExpiry: number | null = null;
+
+	constructor(apiBaseUrlToken: string, clientMail: string, clientSecret: string) {
+		this.apiBaseUrl = apiBaseUrlToken;
+		this.clientId = clientMail;
+		this.clientSecret = clientSecret;
+	}
+
+	// Definiere die Funktion, um den Token abzurufen
+	private async getToken(email: string, password: string): Promise<string> {
+		const url = `https://connect.paj-gps.de/api/v1/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
+		const response = await fetch(url, {
+			method: 'POST',
+		});
+
+		if (!response.ok) {
+			throw new Error('Login failed: ' + response.statusText);
+		}
+
+		const data: TokenResponse = await response.json();
+		return data.success.token;
+	}
+
+	private async authenticate(): Promise<void> {
+		//const urlBinder: string = '&password=';
+		const urlBinder: string = '&';
+		const url = [this.apiBaseUrl, encodeURIComponent(this.clientId), urlBinder, this.clientSecret].join('');
+		console.log(`[authenticate] URL: ${url}`);
+		try {
+			//const response = await fetch(`${this.apiBaseUrl}/oauth/token`, {
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+			console.log('### Response ###');
+			//console.log(response);
+			const data: TokenResponse = await response.json();
+			console.log(data);
+			//
+			this.token = data.success.token;
+			//console.log(this.token);
+			//this.tokenExpiry = Date.now() + data.success.expires_in * 1000;
+			//console.log(this.tokenExpiry);
+		} catch (error) {
+			console.error('Error authenticating with PAJ API:', error);
+		}
+	}
+
+	private async getToken(): Promise<string> {
+		if (!this.token || !this.tokenExpiry || Date.now() >= this.tokenExpiry) {
+			await this.authenticate();
+		}
+		return this.token!;
+	}
+
+	//___________________________
+	// Beschreibe diese Funktion:
+	public async getCustomer(): Promise<DeviceDataResponse | null> {
+		const url: string = 'https://connect.paj-gps.de/api/v1/customer';
+		console.log(`[getCustomer#] URL: ${url}`);
+		try {
+			const token = await this.getToken();
+			console.log(`[getCustomer] Token: ${token}`);
+			const response = await fetch(url, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: 'application/json',
+				},
+			});
+			//console.log('=== RESPONSE ===');
+			//console.log(response);
+			if (!response.ok) {
+				throw new Error('[getCustomer] Network response was not ok');
+			}
+			//const userId = JSON.stringify(response.success);
+			//console.log(`[getCustomer] userId: ${userId}`);
+
+			//const data: TokenResponse = await response.json();
+			//const userId = data.success.id;
+			//console.log(userId);
+
+			return await response.json();
+		} catch (error) {
+			console.error('[getCustomer] Error fetching customer data:', error);
+			return null;
+		}
+	}
+	//
+
+	//___________________________
+	// Beschreibe diese Funktion:
+	public async getDeviceData(deviceId: string): Promise<DeviceDataResponse | null> {
+		try {
+			const token = await this.getToken();
+			const response = await fetch(`${this.apiBaseUrl}/deviceData?deviceId=${deviceId}`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			return await response.json();
+		} catch (error) {
+			console.error('Error fetching device data:', error);
+			return null;
+		}
+	}
+}
+
+export default apiManager;
