@@ -22,7 +22,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
-var import_fs = require("fs");
 var import_ApiManager = require("./ApiManager");
 class Pajdr extends utils.Adapter {
   constructor(options = {}) {
@@ -73,21 +72,17 @@ class Pajdr extends utils.Adapter {
       const geo = await client.getGeofences();
       console.log("[Geofence] Anzahl Fences: ", geo.length);
       geo.forEach((fence) => console.log(fence.name));
-      const abfrageDatum = "2024-11-18";
+      const abfrageDatum = "2025-02-18";
       const today_ts = client.datestringToTimestamp(abfrageDatum);
       console.log(today_ts);
       const tracks = await client.getTrackerData(idDevice, today_ts);
       console.log("[TrackerData] Anzahl Tracks: ", tracks.length);
       const tracksLast = await client.getTrackerDataLast(idDevice, 5);
-      console.log("[TrackerDataLast] Abgerufene Daten: ", tracksLast);
       console.log("[TrackerDataLast] Anzahl Tracks: ", tracksLast.length);
       const battery = tracksLast[0].battery;
       console.log("[SingleCarDeviceData] Batterie-Stand: ", battery);
-      const pdfBuffer = await client.getPdf_new(idDevice);
-      import_fs.promises.writeFile("pajData_03_241118.pdf", Buffer.from(pdfBuffer));
-      console.log("[PDF getPdf] Abgerufene Daten: ", pdfBuffer);
-      const pdfBufferR = await client.getRoute(idDevice, today_ts);
-      import_fs.promises.writeFile("pajData_03r.pdf", Buffer.from(pdfBufferR));
+      const notfs3 = await client.getNotifications(idDevice, 10);
+      console.log("[Notifications] Abgerufene Daten: ", notfs3);
     } catch (error) {
       console.error("Fehler:", error);
     }

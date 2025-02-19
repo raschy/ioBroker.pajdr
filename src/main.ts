@@ -5,7 +5,6 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { promises as fs } from 'fs';
 import { ApiManager } from './ApiManager';
 //import { writeLog } from './lib/filelogger';
 //const fileHandle = { path: '/home/raschy/ioBroker.pajdr', file: 'logs1.txt' };
@@ -135,7 +134,7 @@ class Pajdr extends utils.Adapter {
 			*/
 			//
 			// API-Anfrage für TrackerData
-			const abfrageDatum = '2024-11-18';
+			const abfrageDatum = '2025-02-18';
 			const today_ts: number = client.datestringToTimestamp(abfrageDatum);
 			console.log(today_ts);
 			const tracks = await client.getTrackerData(idDevice, today_ts);
@@ -143,28 +142,28 @@ class Pajdr extends utils.Adapter {
 			console.log('[TrackerData] Anzahl Tracks: ', tracks.length);
 			//
 			const tracksLast = await client.getTrackerDataLast(idDevice, 5);
-			console.log('[TrackerDataLast] Abgerufene Daten: ', tracksLast);
+			//console.log('[TrackerDataLast] Abgerufene Daten: ', tracksLast);
 			console.log('[TrackerDataLast] Anzahl Tracks: ', tracksLast.length);
 			//
 			const battery: number = tracksLast[0].battery;
 			console.log('[SingleCarDeviceData] Batterie-Stand: ', battery);
 			//
 			// API-Anfrage für Notifications
-			//const notfs3 = await client.getNotifications(idDevice, 3); // Radiusalarm
-			//console.log('[Notifications] Abgerufene Daten: ', notfs3);
-			//const notfs5 = await client.getNotifications(idDevice, 5); // Speedalarm
-			//console.log('[Notifications] Abgerufene Daten: ', notfs5);
+			const notfs3 = await client.getNotifications(idDevice, 10); // Radiusalarm (ehemals 3)
+			console.log('[Notifications] Abgerufene Daten: ', notfs3);
+			//#const notfs5 = await client.getNotifications(idDevice, 5); // Speedalarm
+			//#console.log('[Notifications] Abgerufene Daten: ', notfs5);
 
 			// API-Anfrage für pdf-Download
 			//const pdfBuffer = await client.getPdf_X(idDevice);
 			//const pdfBuffer = await client.getPdf(idDevice, today_ts);
-			const pdfBuffer = await client.getPdf_new(idDevice);
-			fs.writeFile('pajData_03_241118.pdf', Buffer.from(pdfBuffer));
-			console.log('[PDF getPdf] Abgerufene Daten: ', pdfBuffer);
+			//#const pdfBuffer = await client.getPdf_new(idDevice);
+			//#fs.writeFile('pajData_03_241118.pdf', Buffer.from(pdfBuffer));
+			//#console.log('[PDF getPdf] Abgerufene Daten: ', pdfBuffer);
 
 			// API-Anfrage für pdf-Download von Routen für einen ausgewählten Tag
-			const pdfBufferR = await client.getRoute(idDevice, today_ts);
-			fs.writeFile('pajData_03r.pdf', Buffer.from(pdfBufferR));
+			//#const pdfBufferR = await client.getRoute(idDevice, today_ts);
+			//#fs.writeFile('pajData_03r.pdf', Buffer.from(pdfBufferR));
 			//console.log('[PDF getRoute] Abgerufene Daten: ', JSON.stringify(pdfBufferR));
 
 			//
