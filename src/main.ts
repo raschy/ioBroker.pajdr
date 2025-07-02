@@ -50,8 +50,9 @@ class Pajdr extends utils.Adapter {
 		this.dataUpdateInterval = setTimeout(() => this.callData(user_name, user_pass), executionInterval * 1000);
 		//}
 	}
+
 	async callData(user_name: string, user_pass: string): Promise<void> {
-		this.log.debug('#####  callData  #####');
+		this.log.debug('#####  callData!  #####');
 		try {
 			const client = new ApiManager(user_name, user_pass);
 
@@ -91,6 +92,10 @@ class Pajdr extends utils.Adapter {
 			console.log('[CarDeviceData]: Customer ID', idCustomer);
 			const idDevice = carData[0].iddevice;
 			console.log('[CarDeviceData]: ID-Device', idDevice);
+			//	Speichern der statischen Daten in Objekten
+			await this.storeData('CustomerID', idCustomer);
+			//await this.storeData('DeviceID', idDevice);
+			//
 			const mileage: number = parseFloat(carData[0].optimized_mileage);
 			console.log('[SingleCarDeviceData] km-Stand: ', mileage);
 			//
@@ -143,14 +148,14 @@ class Pajdr extends utils.Adapter {
 			//
 			const tracksLast = await client.getTrackerDataLast(idDevice, 5);
 			//console.log('[TrackerDataLast] Abgerufene Daten: ', tracksLast);
-			console.log('[TrackerDataLast] Anzahl Tracks: ', tracksLast.length);
+			//console.log('[TrackerDataLast] Anzahl Tracks: ', tracksLast.length);
 			//
-			const battery: number = tracksLast[0].battery;
+			const battery = parseInt(String(tracksLast[0].battery), 16);
 			console.log('[SingleCarDeviceData] Batterie-Stand: ', battery);
 			//
 			// API-Anfrage für Notifications
-			const notfs3 = await client.getNotifications(idDevice, 10); // Radiusalarm (ehemals 3)
-			console.log('[Notifications] Abgerufene Daten: ', notfs3);
+			//const notfs3 = await client.getNotifications(idDevice, 10); // Radiusalarm (ehemals 3)
+			//console.log('[Notifications] Abgerufene Daten: ', notfs3);
 			//#const notfs5 = await client.getNotifications(idDevice, 5); // Speedalarm
 			//#console.log('[Notifications] Abgerufene Daten: ', notfs5);
 
@@ -172,18 +177,86 @@ class Pajdr extends utils.Adapter {
 		}
 	}
 
+	/**
+	 * Is called when a subscribed state changes.
+	 * storeData is called when a state changes.
+	 *
+	 * @param customerId The ID of the state that changed
+	 * @param value The state object
+	 */
+	async storeData(customerId: string, value: number | string): Promise<void> {
+		console.log(`[storeData] CustomerID: ${customerId}, Value: ${value}`);
+		const dp_CustomerId = this.removeInvalidCharacters(customerId);
+		this.log.info(`[storeData] Customer "${dp_CustomerId}" with value: "${value}"`);
+		const dp_customerValue: string = this.removeInvalidCharacters(String(value));
+		await this.setObjectNotExistsAsync(dp_customerValue, {
+			type: 'device',
+			common: {
+				name: dp_CustomerId,
+			},
+			native: {},
+		});
+		//
+		await this.extendObject(dp_customerValue, {
+			common: {
+				name: dp_CustomerId,
+			},
+		});
+		//
+		const dp_State = `${dp_customerValue}.${dp_CustomerId}`;
+		await this.setObjectNotExistsAsync(dp_State, {
+			type: 'state',
+			common: {
+				name: {
+					en: 'Customer ID',
+					de: 'Kunden-ID',
+					ru: 'Идентификатор клиента',
+					pt: 'ID do cliente',
+					nl: 'Klant-ID',
+					fr: 'ID client',
+					it: 'ID cliente',
+					es: 'ID del cliente',
+					pl: 'ID klienta',
+					uk: 'Ідентифікатор клієнта',
+					'zh-cn': '客户ID',
+				},
+				type: 'number',
+				role: 'value',
+				unit: '',
+				read: true,
+				write: false,
+			},
+			native: {},
+		});
+		//
+		this.log.info(`[storeData] State: ${dp_State}" with value: "${value}"`);
+		//await this.setState(dp_State, { val: value, ack: true, q: 0x00 });
+		await this.setStateChangedAsync(`${dp_State}`, { val: value, ack: true });
+	}
+
 	//	#### Helper ####
+	//
+	/**
+	 * removes illegal characters
+	 *
+	 * @param inputString Designated name for an object/data point
+	 * @returns Cleaned name for an object/data point
+	 */
+	removeInvalidCharacters(inputString: string): string {
+		const regexPattern = '[^a-zA-Z0-9]+';
+		const regex = new RegExp(regexPattern, 'gu');
+		return inputString.replace(regex, '_');
+	}
 
 	/**
 	 * Is called when adapter shuts down - callback has to be called under any circumstances!
 	 *
-	 * @param callback
+	 * @param callback Callback
 	 */
 	private onUnload(callback: () => void): void {
 		try {
 			// Here you must clear all timeouts or intervals that may still be active
 			// clearTimeout(timeout1);
-			//## this.updateInterval && clearInterval(this.updateInterval);
 			// clearTimeout(timeout2);
 			if (this.dataUpdateInterval) {
 				clearTimeout(this.dataUpdateInterval);
@@ -193,6 +266,7 @@ class Pajdr extends utils.Adapter {
 
 			callback();
 		} catch (e) {
+			this.log.debug(`[onUnload] ${JSON.stringify(e)}`);
 			callback();
 		}
 	}

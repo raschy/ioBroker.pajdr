@@ -46,7 +46,7 @@ class Pajdr extends utils.Adapter {
     this.dataUpdateInterval = setTimeout(() => this.callData(user_name, user_pass), executionInterval * 1e3);
   }
   async callData(user_name, user_pass) {
-    this.log.debug("#####  callData  #####");
+    this.log.debug("#####  callData!  #####");
     try {
       const client = new import_ApiManager.ApiManager(user_name, user_pass);
       await client.loadToken();
@@ -67,6 +67,7 @@ class Pajdr extends utils.Adapter {
       console.log("[CarDeviceData]: Customer ID", idCustomer);
       const idDevice = carData[0].iddevice;
       console.log("[CarDeviceData]: ID-Device", idDevice);
+      await this.storeData("CustomerID", idCustomer);
       const mileage = parseFloat(carData[0].optimized_mileage);
       console.log("[SingleCarDeviceData] km-Stand: ", mileage);
       const geo = await client.getGeofences();
@@ -78,20 +79,81 @@ class Pajdr extends utils.Adapter {
       const tracks = await client.getTrackerData(idDevice, today_ts);
       console.log("[TrackerData] Anzahl Tracks: ", tracks.length);
       const tracksLast = await client.getTrackerDataLast(idDevice, 5);
-      console.log("[TrackerDataLast] Anzahl Tracks: ", tracksLast.length);
-      const battery = tracksLast[0].battery;
+      const battery = parseInt(String(tracksLast[0].battery), 16);
       console.log("[SingleCarDeviceData] Batterie-Stand: ", battery);
-      const notfs3 = await client.getNotifications(idDevice, 10);
-      console.log("[Notifications] Abgerufene Daten: ", notfs3);
     } catch (error) {
       console.error("Fehler:", error);
     }
   }
+  /**
+   * Is called when a subscribed state changes.
+   * storeData is called when a state changes.
+   *
+   * @param customerId The ID of the state that changed
+   * @param value The state object
+   */
+  async storeData(customerId, value) {
+    console.log(`[storeData] CustomerID: ${customerId}, Value: ${value}`);
+    const dp_CustomerId = this.removeInvalidCharacters(customerId);
+    this.log.info(`[storeData] Customer "${dp_CustomerId}" with value: "${value}"`);
+    const dp_customerValue = this.removeInvalidCharacters(String(value));
+    await this.setObjectNotExistsAsync(dp_customerValue, {
+      type: "device",
+      common: {
+        name: dp_CustomerId
+      },
+      native: {}
+    });
+    await this.extendObject(dp_customerValue, {
+      common: {
+        name: dp_CustomerId
+      }
+    });
+    const dp_State = `${dp_customerValue}.${dp_CustomerId}`;
+    await this.setObjectNotExistsAsync(dp_State, {
+      type: "state",
+      common: {
+        name: {
+          en: "Customer ID",
+          de: "Kunden-ID",
+          ru: "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0438\u0435\u043D\u0442\u0430",
+          pt: "ID do cliente",
+          nl: "Klant-ID",
+          fr: "ID client",
+          it: "ID cliente",
+          es: "ID del cliente",
+          pl: "ID klienta",
+          uk: "\u0406\u0434\u0435\u043D\u0442\u0438\u0444\u0456\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0456\u0454\u043D\u0442\u0430",
+          "zh-cn": "\u5BA2\u6237ID"
+        },
+        type: "number",
+        role: "value",
+        unit: "",
+        read: true,
+        write: false
+      },
+      native: {}
+    });
+    this.log.info(`[storeData] State: ${dp_State}" with value: "${value}"`);
+    await this.setStateChangedAsync(`${dp_State}`, { val: value, ack: true });
+  }
   //	#### Helper ####
+  //
+  /**
+   * removes illegal characters
+   *
+   * @param inputString Designated name for an object/data point
+   * @returns Cleaned name for an object/data point
+   */
+  removeInvalidCharacters(inputString) {
+    const regexPattern = "[^a-zA-Z0-9]+";
+    const regex = new RegExp(regexPattern, "gu");
+    return inputString.replace(regex, "_");
+  }
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!
    *
-   * @param callback
+   * @param callback Callback
    */
   onUnload(callback) {
     try {
@@ -100,6 +162,7 @@ class Pajdr extends utils.Adapter {
       }
       callback();
     } catch (e) {
+      this.log.debug(`[onUnload] ${JSON.stringify(e)}`);
       callback();
     }
   }

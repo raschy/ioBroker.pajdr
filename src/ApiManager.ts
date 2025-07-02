@@ -9,7 +9,9 @@ interface TokenResponse {
 		userID: number;
 	};
 }
-
+/**
+ * @description Represents the raw customer data returned by the API.
+ */
 export class ApiManager {
 	private email: string;
 	private password: string;
@@ -18,7 +20,9 @@ export class ApiManager {
 	private tokenExpiry: number | null = null;
 
 	/**
-	 *
+	 * @param email - The email address of the user.
+	 * @param password - The password of the user.
+	 * @description Initializes the ApiManager with user credentials and sets the token file path.
 	 */
 	constructor(email: string, password: string) {
 		this.email = email;
@@ -26,7 +30,8 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description Retrieves a bearer token from the API.
+	 * @returns bearer token as a string.
 	 */
 	async getToken(): Promise<string> {
 		//const url = `https://connect.paj-gps.de/api/v1/login?email=${encodeURIComponent(this.email)}&password=${encodeURIComponent(this.password)}`;
@@ -53,14 +58,15 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description Saves the token to a file.
+	 * @param token - The token string to save.
 	 */
 	async saveToken(token: string): Promise<void> {
 		await fs.promises.writeFile(this.tokenFilePath, token, 'utf8');
 	}
 
 	/**
-	 *
+	 * @description Loads the token from a file.
 	 */
 	async loadToken(): Promise<string> {
 		try {
@@ -73,7 +79,7 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description get Customer-Data.
 	 */
 	async getCustomer(): Promise<number> {
 		const url = 'https://connect.paj-gps.de/api/v1/customer';
@@ -112,7 +118,7 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description get Device-Data.
 	 */
 	async getDevice(): Promise<CarData[]> {
 		const url = 'https://connect.paj-gps.de/api/v1/device';
@@ -150,7 +156,7 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description Retrieves car device data from the API.
 	 */
 	async getCarDeviceData(): Promise<CarData[]> {
 		const url = 'https://connect.paj-gps.de/api/v1/sdevice/car';
@@ -188,7 +194,8 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description get Single CarDeviceData by carId.
+	 * @param carId - The ID of the car device to retrieve data for.
 	 */
 	async getSingleCarDeviceData(carId: number): Promise<CarData[]> {
 		//const url: string = 'https://connect.paj-gps.de/api/v1/sdevice/car/452';
@@ -226,7 +233,7 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description get Geofences.
 	 */
 	async getGeofences(): Promise<GeoFence[]> {
 		const url = 'https://connect.paj-gps.de/api/v1/geofences';
@@ -272,7 +279,9 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description get Route-Data.
+	 * @param deviceId - The ID of the device for which the route data is requested.
+	 * @param timestamp - The timestamp for the route data, in milliseconds.
 	 */
 	async getRoute(deviceId: number, timestamp: number): Promise<any> {
 		const url = 'https://api.paj-gps.com/api/v1/route/export';
@@ -332,11 +341,12 @@ export class ApiManager {
 		}
 	}
 
-	//https://connect.paj-gps.de/api/v1/logbook/getAllRoutes/2937042
 	/**
-	 *
+	 * @description Retrieves all routes for a given device ID.
+	 * @param deviceId - The ID of the device for which all routes are requested.
 	 */
 	async getAllRoutes(deviceId: number): Promise<any> {
+		//https://connect.paj-gps.de/api/v1/logbook/getAllRoutes/2937042
 		//
 		const baseUrl = 'https://connect.paj-gps.de/api/v1/logbook/getAllRoutes/';
 		const url = [baseUrl, deviceId].join('');
@@ -372,14 +382,18 @@ export class ApiManager {
 		}
 	}
 
-	//https://connect.paj-gps.de/api/v1/trackerdata/1312315/date_range?dateStart=1730970000000&dateEnd=1730970086399&wifi=1&gps=1
 	/**
-	 *
+	 * @description Retrieves tracker data for a given device ID and timestamp.
+	 * @param deviceId - The ID of the device for which tracker data is requested.
+	 * @param timestamp - The timestamp for the tracker data, in milliseconds.
 	 */
 	async getTrackerData(deviceId: number, timestamp: number): Promise<Track[]> {
+		//https://connect.paj-gps.de/api/v1/trackerdata/1312315/date_range?dateStart=
+		// 1730970000000
+		// &dateEnd=1730970086399
+		// &wifi=1&gps=1
 		//
 		const baseUrl = 'https://connect.paj-gps.de/api/v1/trackerdata/';
-		//nst url = [baseUrl, deviceId, '/date_range?dateStart=1721772000&dateEnd=1722335247'].join('');
 		const url = [
 			baseUrl,
 			deviceId,
@@ -418,11 +432,13 @@ export class ApiManager {
 		}
 	}
 
-	//https://connect.paj-gps.de/api/v1/trackerdata/1312315/last_points?lastPoints=10&gps=1&wifi=0
 	/**
-	 *
+	 * @description Retrieves the last tracker data points for a given device ID.
+	 * @param deviceId - The ID of the device for which tracker data is requested.
+	 * @param points - The number of last data points to retrieve.
 	 */
 	async getTrackerDataLast(deviceId: number, points: number): Promise<Track[]> {
+		//https://connect.paj-gps.de/api/v1/trackerdata/1312315/last_points?lastPoints=10&gps=1&wifi=0
 		//
 		const baseUrl = 'https://connect.paj-gps.de/api/v1/trackerdata/';
 		const url = [baseUrl, deviceId, '/last_points?lastPoints=', points, '&wifi=0&gps=1'].join('');
@@ -455,9 +471,10 @@ export class ApiManager {
 		}
 	}
 
-	//######
 	/**
-	 *
+	 * @description Retrieves notifications for a given car ID and alert type.
+	 * @param carId - The ID of the car for which notifications are requested.
+	 * @param alertType - The type of alert for which notifications are requested.
 	 */
 	async getNotifications(carId: number, alertType: number): Promise<any> {
 		//https://connect.paj-gps.de/api/v1/notifications/1312315?alertType=5&isRead=1
@@ -504,11 +521,13 @@ export class ApiManager {
 		}
 	}
 
-	//https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1312315&startDate=1731715200&endDate=1731801500&dsType=mixTR
 	/**
-	 *
+	 * @description Downloads a PDF report for a given device ID and date range.
+	 * @param deviceId - The ID of the device for which the PDF report is requested.
 	 */
 	async getPdf_new(deviceId: number): Promise<Buffer> {
+		//https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1312315&startDate=1731715200&endDate=1731801500&dsType=mixTR
+		//
 		const url =
 			'https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1312315&startDate=1731715200&endDate=1731801500&dsType=mixTR';
 
@@ -539,7 +558,7 @@ export class ApiManager {
 			const pdfBuffer = await response.buffer();
 
 			// Schreiben der PDF-Daten in eine Datei
-			fs.promises.writeFile(outputPath, Buffer.from(pdfBuffer));
+			await fs.promises.writeFile(outputPath, Buffer.from(pdfBuffer));
 
 			return pdfBuffer;
 		} catch (error: unknown) {
@@ -555,7 +574,9 @@ export class ApiManager {
 
 	// https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=1287648&startDate=1721772000&endDate=1721858400&dsType=mixTR
 	/**
-	 *
+	 * @description Downloads a PDF report for a given device ID and date range.
+	 * @param deviceId - The ID of the device for which the PDF report is requested.
+	 * @returns pdfBuffer - A promise that resolves to a Buffer containing the PDF data.
 	 */
 	async getPdf_X(deviceId: number): Promise<Buffer> {
 		//
@@ -593,7 +614,7 @@ export class ApiManager {
 			const pdfBuffer = await response.buffer();
 
 			// Schreiben der PDF-Daten in eine Datei
-			fs.promises.writeFile(outputPath, Buffer.from(pdfBuffer));
+			await fs.promises.writeFile(outputPath, Buffer.from(pdfBuffer));
 
 			return pdfBuffer;
 		} catch (error: unknown) {
@@ -608,7 +629,10 @@ export class ApiManager {
 	}
 
 	/**
-	 *
+	 * @description Downloads a PDF report for a given device ID and timestamp.
+	 * @param deviceId - The ID of the device for which the PDF report is requested.
+	 * @param timestamp - The timestamp for the report, in milliseconds.
+	 * @returns response.arrayBuffer() - A promise that resolves to an ArrayBuffer containing the PDF data.
 	 */
 	async getPdf(deviceId: number, timestamp: number): Promise<ArrayBuffer> {
 		const baseUrl = 'https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=';
@@ -690,82 +714,12 @@ export class ApiManager {
 */
 	}
 
-	/**
-	 *
-	 */
-	async getPdf_old(deviceId: number): Promise<ArrayBuffer> {
-		const baseUrl = 'https://connect.paj-gps.de/api/v1/customer/dashboard/downloadpdf?deviceId=';
-		const tempUrl = '&startDate=1720994400&endDate=1721080800';
-		const typeUrl = '&dsType=mixTR';
-		const url = [baseUrl, deviceId, tempUrl, typeUrl].join('');
-		console.log(`[getPDF] URL: ${url}`);
-		//
-		const body = {
-			deviceId: [1312315],
-			dateStart: 1721772000,
-			dateEnd: 1721858399,
-			lastMinutes: 30,
-			lastPoints: 114,
-			rangeType: 'daterange',
-			type: 'pdf',
-			sort: 'asc',
-			translations: {
-				wayPoints: 'Wegpunkte',
-				signalFrom: 'Signal von',
-				showInGoogle: 'Position auf Google Maps anzeigen',
-				currentPosition: 'Aktuelle Position',
-				id: 'ID',
-				lat: 'Breitengrad',
-				lng: 'Längengrad',
-				dateTime: 'Uhrzeit',
-				battery: 'Batterie',
-				speed: 'Geschwindigkeit',
-				direction: 'Richtung',
-				positionLink: 'Link zur Position',
-			},
-			version: 'V2',
-		};
-		body.dateStart = 1720908000;
-		body.dateEnd = 1720994000;
-
-		//try {
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				accept: 'application/pdf',
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${this.storedToken}`,
-			},
-			//body: JSON.stringify(body),
-		});
-		//console.log('RESPONSE', response);
-
-		//const errorText = await response.text();
-		//console.log('ErrorText', errorText);
-		return response.arrayBuffer();
-
-		//const pdfBuffer = await response.buffer();
-
-		if (!response.ok) {
-			throw new Error(`[getGeofences] Datenabruf fehlgeschlagen: ${response.statusText}`);
-		}
-
-		/*
-		} catch (error: unknown) {
-			if (error instanceof Error) {
-				console.error('[getGeofences] Fehler:', error.message);
-				throw error; // Fehler weiterwerfen, um den Aufrufer zu informieren
-			} else {
-				console.error('[getGeofences] Unbekannter Fehler:', error);
-				throw new Error('Unbekannter Fehler aufgetreten');
-			}
-		}
-*/
-	}
-
 	// Helper
 	/**
+	 * Converts a Unix timestamp to a formatted date string in German locale.
 	 *
+	 * @param unixTimestamp - The Unix timestamp to convert.
+	 * @returns A formatted date string in 'de-DE' locale.
 	 */
 	timestampToDateDE(unixTimestamp: number): string {
 		const date = new Date(unixTimestamp);
@@ -773,7 +727,10 @@ export class ApiManager {
 	}
 
 	/**
+	 * Converts a Unix timestamp to a Date object.
 	 *
+	 * @param unixTimestamp - The Unix timestamp to convert.
+	 * @returns A Date object representing the given timestamp.
 	 */
 	timestampToDate(unixTimestamp: number): Date {
 		console.log(unixTimestamp);
@@ -781,7 +738,9 @@ export class ApiManager {
 	}
 
 	/**
+	 * Returns the current date as a timestamp.
 	 *
+	 * @returns A timestamp representing today's date at midnight.
 	 */
 	todayTimestamp(): number {
 		const today = new Date().toISOString().slice(0, -14);
@@ -789,7 +748,10 @@ export class ApiManager {
 	}
 
 	/**
+	 * Converts a date string in the format 'YYYY-MM-DD' to a timestamp.
 	 *
+	 * @param d - The date string to convert.
+	 * @returns A timestamp representing the given date.
 	 */
 	datestringToTimestamp(d: string): number {
 		const val = d.split('-');
@@ -805,7 +767,10 @@ export class ApiManager {
 	}
 
 	/**
+	 * Formats a Date object into a string in the format 'YYYY-MM-DD'.
 	 *
+	 * @param d - The Date object to format.
+	 * @returns A string representing the date in 'YYYY-MM-DD' format.
 	 */
 	formatDate(d: Date): string {
 		const year = d.getFullYear();
