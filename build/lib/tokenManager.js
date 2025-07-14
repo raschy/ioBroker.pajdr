@@ -33,6 +33,7 @@ class TokenManager {
     this.password = password;
   }
   tokenData = null;
+  refreshingTokenPromise = null;
   tokenPromise = null;
   baseUrl = "https://connect.paj-gps.de/api/v1/";
   //
@@ -57,11 +58,11 @@ class TokenManager {
         if (!this.tokenData) {
           throw new Error("Token data is not available for refresh");
         }
-        this.tokenData = await this.refreshAccessToken();
+        this.tokenData = await this.getTokenWithRefreshtoken();
         return this.tokenData;
       } catch {
         this.adapter.log.debug("[getAccessToken] refresh with token failed, using login");
-        this.tokenData = await this.login();
+        this.tokenData = await this.getTokenWithLogin();
         return this.tokenData;
       } finally {
         this.tokenPromise = null;
@@ -71,36 +72,71 @@ class TokenManager {
     return (await this.tokenPromise).accessToken;
   }
   //
-  async getAccessToken() {
-    var _a;
+  async getAccessToken_() {
     this.adapter.log.debug("[getAccessToken#]");
     this.tokenData = await this.getStoredTokenData();
     this.adapter.log.debug(`[getAccessToken] Loaded token data expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : "N/A"}`);
-    this.adapter.log.debug(`[getAccessToken] Loaded refresh token ${(_a = this.tokenData) == null ? void 0 : _a.accessToken.substring(0, 30)}`);
-    if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
-      const lease = this.tokenData.expiresAt - 6e4 - Date.now();
-      this.adapter.log.debug(`[getAccessToken] Expires lease: ${lease}`);
-      return this.tokenData.accessToken;
-    }
     try {
       this.adapter.log.info("Refreshing access token using stored refresh token...");
-      this.tokenData = await this.refreshAccessToken();
+      this.tokenData = await this.getTokenWithRefreshtoken();
       this.adapter.log.debug("[getAccessToken] Token via refresh");
+      if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
+        const lease = this.tokenData.expiresAt - 6e4 - Date.now();
+        this.adapter.log.debug(`[getAccessToken] Expires lease: ${lease}`);
+        return this.tokenData.accessToken;
+      }
     } catch (e) {
       this.adapter.log.warn("Stored refresh token invalid, performing full login...");
-      this.tokenData = await this.login();
+      this.tokenData = await this.getTokenWithLogin();
       this.adapter.log.debug("[getAccessToken] Token via LOGIN");
     }
     this.storeToken();
     return this.tokenData.accessToken;
+  }
+  async getAccessToken() {
+    this.adapter.log.debug("[getAccessToken#]");
+    this.tokenData = await this.getStoredTokenData();
+    this.adapter.log.debug(`[getAccessToken] Loaded token data expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : "N/A"}`);
+    if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
+      this.adapter.log.debug("[getAccessToken] Token still valid.");
+      return this.tokenData.accessToken;
+    }
+    if (this.refreshingTokenPromise) {
+      this.adapter.log.debug("[getAccessToken] Awaiting ongoing token refresh...");
+      return this.refreshingTokenPromise;
+    }
+    this.refreshingTokenPromise = this.refreshTokenInternal();
+    try {
+      const token = await this.refreshingTokenPromise;
+      return token;
+    } finally {
+      this.refreshingTokenPromise = null;
+    }
+  }
+  async refreshTokenInternal() {
+    this.adapter.log.debug("[refreshTokenInternal#]");
+    try {
+      this.adapter.log.info("Refreshing access token using stored refresh token...");
+      this.tokenData = await this.getTokenWithRefreshtoken();
+      if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
+        this.storeToken();
+        return this.tokenData.accessToken;
+      }
+      throw new Error("Refreshed token is still expired");
+    } catch (e) {
+      this.adapter.log.warn("[refreshTokenInternal] Refresh token failed, falling back to full login...");
+      this.tokenData = await this.getTokenWithLogin();
+      this.storeToken();
+      return this.tokenData.accessToken;
+    }
   }
   /**
    * Login to the API and retrieves the access token.
    * @returns {Promise<TokenData>} The token data containing access token, refresh token, and expiration time.
    * @throws {Error} If the login fails or the response is invalid.
    */
-  async login() {
-    this.adapter.log.debug("[login#]");
+  async getTokenWithLogin() {
+    this.adapter.log.debug("[getTokenWithLogin#]");
     const spezUrl = "login?email=";
     const urlBinder = "&password=";
     const url = [this.baseUrl, spezUrl, encodeURIComponent(this.email), urlBinder, encodeURIComponent(this.password)].join("");
@@ -108,7 +144,7 @@ class TokenManager {
       method: "POST",
       headers: { "Content-Type": "application/json" }
     });
-    this.adapter.log.info(`[login] Response: ${res.status} ${res.statusText}`);
+    this.adapter.log.info(`[getTokenWithLogin] Response: ${res.status} ${res.statusText}`);
     if (!res.ok) {
       throw new Error(`Login failed: ${res.statusText}`);
     }
@@ -127,9 +163,9 @@ class TokenManager {
     };
     return tokenData;
   }
-  async refreshAccessToken() {
+  async getTokenWithRefreshtoken() {
     var _a;
-    this.adapter.log.debug("[refreshAccessToken#]");
+    this.adapter.log.debug("[getTokenWithRefreshtoken#]");
     const spezUrl = "updatetoken?email=";
     const urlBinder = "&refresh_token=";
     if (!this.tokenData || !this.tokenData.refreshToken) {
@@ -140,7 +176,7 @@ class TokenManager {
       method: "POST",
       headers: { "Content-Type": "application/json" }
     });
-    this.adapter.log.info(`[refreshAccessToken] Response: ${res.status} ${res.statusText}`);
+    this.adapter.log.info(`[getTokenWithRefreshtoken] Response: ${res.status} ${res.statusText}`);
     if (!res.ok) {
       throw new Error(`Token refresh failed: ${res.statusText}`);
     }
@@ -177,7 +213,7 @@ class TokenManager {
     let tokenData = await this.getStoredTokenData();
     if (!tokenData) {
       try {
-        tokenData = await this.login();
+        tokenData = await this.getTokenWithLogin();
         this.storeToken();
       } catch (error) {
         this.adapter.log.error(`[initTokenData] Login failed: ${error instanceof Error ? error.message : "Unknown error"}`);

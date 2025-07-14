@@ -20,6 +20,7 @@ interface TokenData {
 
 export class TokenManager {
 	private tokenData: TokenData | null = null;
+	private refreshingTokenPromise: Promise<string> | null = null;
 	private tokenPromise: Promise<TokenData> | null = null;
 	private baseUrl: string = 'https://connect.paj-gps.de/api/v1/';
 
@@ -69,12 +70,12 @@ export class TokenManager {
 				if (!this.tokenData) {
 					throw new Error('Token data is not available for refresh');
 				}
-				this.tokenData = await this.refreshAccessToken();
+				this.tokenData = await this.getTokenWithRefreshtoken();
 				//this.tokenData = await this.refreshAccessToken(this.tokenData.refreshToken);
 				return this.tokenData;
 			} catch {
 				this.adapter.log.debug('[getAccessToken] refresh with token failed, using login');
-				this.tokenData = await this.login();
+				this.tokenData = await this.getTokenWithLogin();
 				return this.tokenData;
 			} finally {
 				this.tokenPromise = null;
@@ -87,34 +88,81 @@ export class TokenManager {
 		return (await this.tokenPromise).accessToken
 	}
 	//
-	async getAccessToken(): Promise<string> {
+	async getAccessToken_(): Promise<string> {
 		this.adapter.log.debug('[getAccessToken#]');
 		//
 		this.tokenData = await this.getStoredTokenData();
-		//this.adapter.log.debug(`[getAccessToken] 1 Expires At: ${this.tokenData ? this.tokenData.expiresAt : 'N/A'}`);
 		this.adapter.log.debug(`[getAccessToken] Loaded token data expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : 'N/A'}`);
-		this.adapter.log.debug(`[getAccessToken] Loaded refresh token ${this.tokenData?.accessToken.substring(0, 30)}`);
+		//this.adapter.log.debug(`[getAccessToken] Loaded refresh token ${this.tokenData?.accessToken.substring(0, 30)}`);
 		//
-		// Check if the token is not expired (more than a minute left)
-		if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
-			// If the token is still valid, return it
-			const lease = this.tokenData.expiresAt - 60000 - Date.now();
-			//this.adapter.log.debug(`[getAccessToken] Expires At: ${this.tokenData.expiresAt}`);
-			this.adapter.log.debug(`[getAccessToken] Expires lease: ${lease}`);
-			return this.tokenData.accessToken;
-		}
 		//
 		try {
 			this.adapter.log.info('Refreshing access token using stored refresh token...');
-			this.tokenData = await this.refreshAccessToken();
+			this.tokenData = await this.getTokenWithRefreshtoken();
 			this.adapter.log.debug('[getAccessToken] Token via refresh');
+			// Check if the token is not expired (more than a minute left)
+			if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
+				const lease = this.tokenData.expiresAt - 60000 - Date.now();
+				this.adapter.log.debug(`[getAccessToken] Expires lease: ${lease}`);
+				return this.tokenData.accessToken;
+			}
 		} catch (e) {
 			this.adapter.log.warn('Stored refresh token invalid, performing full login...');
-			this.tokenData = await this.login();
+			this.tokenData = await this.getTokenWithLogin();
 			this.adapter.log.debug('[getAccessToken] Token via LOGIN');
 		}
 		this.storeToken();
 		return this.tokenData.accessToken;
+	}
+
+	async getAccessToken(): Promise<string> {
+		this.adapter.log.debug('[getAccessToken#]');
+
+		this.tokenData = await this.getStoredTokenData();
+		this.adapter.log.debug(`[getAccessToken] Loaded token data expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : 'N/A'}`);
+
+		// Prüfen, ob Token gültig
+		if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
+			this.adapter.log.debug('[getAccessToken] Token still valid.');
+			return this.tokenData.accessToken;
+		}
+
+		// Wenn gerade ein anderer Vorgang den Token aktualisiert: darauf warten
+		if (this.refreshingTokenPromise) {
+			this.adapter.log.debug('[getAccessToken] Awaiting ongoing token refresh...');
+			return this.refreshingTokenPromise;
+		}
+
+		// Jetzt exklusiv aktualisieren
+		this.refreshingTokenPromise = this.refreshTokenInternal();
+
+		try {
+			const token = await this.refreshingTokenPromise;
+			return token;
+		} finally {
+			this.refreshingTokenPromise = null; // Nach Refresh wieder freigeben
+		}
+	}
+
+	private async refreshTokenInternal(): Promise<string> {
+		this.adapter.log.debug('[refreshTokenInternal#]');
+
+		try {
+			this.adapter.log.info('Refreshing access token using stored refresh token...');
+			this.tokenData = await this.getTokenWithRefreshtoken();
+
+			if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
+				this.storeToken();
+				return this.tokenData.accessToken;
+			}
+
+			throw new Error('Refreshed token is still expired');
+		} catch (e) {
+			this.adapter.log.warn('[refreshTokenInternal] Refresh token failed, falling back to full login...');
+			this.tokenData = await this.getTokenWithLogin();
+			this.storeToken();
+			return this.tokenData.accessToken;
+		}
 	}
 
 	/**
@@ -122,8 +170,8 @@ export class TokenManager {
 	 * @returns {Promise<TokenData>} The token data containing access token, refresh token, and expiration time.
 	 * @throws {Error} If the login fails or the response is invalid.
 	 */
-	private async login(): Promise<TokenData> {
-		this.adapter.log.debug('[login#]');
+	private async getTokenWithLogin(): Promise<TokenData> {
+		this.adapter.log.debug('[getTokenWithLogin#]');
 		const spezUrl: string = 'login?email=';
 		const urlBinder: string = '&password=';
 		const url = [this.baseUrl, spezUrl, encodeURIComponent(this.email), urlBinder, encodeURIComponent(this.password)].join('');
@@ -133,7 +181,7 @@ export class TokenManager {
 			headers: { 'Content-Type': 'application/json' },
 		});
 
-		this.adapter.log.info(`[login] Response: ${res.status} ${res.statusText}`);
+		this.adapter.log.info(`[getTokenWithLogin] Response: ${res.status} ${res.statusText}`);
 		if (!res.ok) {
 			throw new Error(`Login failed: ${res.statusText}`);
 		}
@@ -156,9 +204,9 @@ export class TokenManager {
 		return tokenData;
 	}
 
-	private async refreshAccessToken(): Promise<TokenData> {
+	private async getTokenWithRefreshtoken(): Promise<TokenData> {
 		//private async refreshAccessToken(refreshToken: string): Promise<TokenData> {
-		this.adapter.log.debug('[refreshAccessToken#]');
+		this.adapter.log.debug('[getTokenWithRefreshtoken#]');
 		const spezUrl: string = 'updatetoken?email=';
 		const urlBinder: string = '&refresh_token=';
 
@@ -177,7 +225,7 @@ export class TokenManager {
 			headers: { 'Content-Type': 'application/json' },
 		});
 
-		this.adapter.log.info(`[refreshAccessToken] Response: ${res.status} ${res.statusText}`);
+		this.adapter.log.info(`[getTokenWithRefreshtoken] Response: ${res.status} ${res.statusText}`);
 
 		if (!res.ok) {
 			throw new Error(`Token refresh failed: ${res.statusText}`);
@@ -225,7 +273,7 @@ export class TokenManager {
 
 		if (!tokenData) {
 			try {
-				tokenData = await this.login();
+				tokenData = await this.getTokenWithLogin();
 				this.storeToken();
 				//await this.storeToken(tokenData);
 			} catch (error) {
