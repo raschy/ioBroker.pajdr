@@ -5,30 +5,37 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { ApiManager } from './ApiManager';
+import { Adapter } from '@iobroker/adapter-core';
+import { ApiManager } from './lib/apiManager';
+import { TokenManager } from './lib/tokenManager';
 //import { writeLog } from './lib/filelogger';
 //const fileHandle = { path: '/home/raschy/ioBroker.pajdr', file: 'logs1.txt' };
 
 // Load your modules here, e.g.:
 
-class Pajdr extends utils.Adapter {
-	public constructor(options: Partial<utils.AdapterOptions> = {}) {
+class Pajdr extends Adapter {
+	private tokenManager!: TokenManager;
+	private apiManager!: ApiManager;
+
+	constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
 			...options,
 			name: 'pajdr',
 		});
+
 		this.on('ready', this.onReady.bind(this));
-		// this.on('stateChange', this.onStateChange.bind(this));
+		this.on('stateChange', this.onStateChange.bind(this));
 		// this.on('objectChange', this.onObjectChange.bind(this));
 		// this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 	}
 	private dataUpdateInterval: NodeJS.Timeout | undefined;
-
+	private userId: number | undefined;
+	//
 	/**
 	 * Is called when databases are connected and adapter received configuration.
 	 */
-	private async onReady(): Promise<void> {
+	private async _onReady(): Promise<void> {
 		// Initialize your adapter here
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
@@ -42,196 +49,145 @@ class Pajdr extends utils.Adapter {
 		const dataDir: string = utils.getAbsoluteDefaultDataDir();
 		console.log(`DIR ${dataDir}`);
 		//
-		await this.callData(user_name, user_pass);
+		//
+		//await this.callData(user_name, user_pass);
 
 		// ####### LOOP #######
 		//if (this.internDataReady) {
 		// timed data request
-		this.dataUpdateInterval = setTimeout(() => this.callData(user_name, user_pass), executionInterval * 1000);
+		//this.dataUpdateInterval = setTimeout(() => this.callData(user_name, user_pass), executionInterval * 1000);
 		//}
 	}
 
-	async callData(user_name: string, user_pass: string): Promise<void> {
-		this.log.debug('#####  callData!  #####');
+	async onReady(): Promise<void> {
+		this.log.info('Adapter is ready');
+
+		if (!this.config.email || !this.config.password) {
+			this.log.error('Email or password not set in configuration');
+			return;
+		}
+
+		this.tokenManager = new TokenManager(this, this.config.email, this.config.password);
+		this.apiManager = new ApiManager(this, this.tokenManager);
+
 		try {
-			const client = new ApiManager(user_name, user_pass);
-
-			// Token abrufen
-			//const token = await client.getToken();
-
-			// Token speichern
-			//await client.saveToken(token);
-			//console.log('Token gespeichert:', token);
-
-			// Token laden und verwenden
-			await client.loadToken();
-			//#const storedToken: string = await client.loadToken();
-			//#console.log('Gespeicherter Token:', storedToken);
-
-			// API-Anfrage für Customer
-			const userId = await client.getCustomer();
-			console.log('[Customer] UserId:', userId);
+			await this.tokenManager.getAccessToken();
 			//
-			// API-Anfrage für Device
-			const device: CarData[] = await client.getDevice();
-			//console.log('[Device] Abgerufene Daten: ', device);
-			const deviceId = device[0].carDevice_id;
-			console.log('[Device]: ID', deviceId);
-			//
-			// API-Anfrage für CarDeviceData
-			const carData = await client.getCarDeviceData();
-			console.log('[CarDeviceData] Anzahl Datensätze :', carData.length);
-			//console.log('[CarDeviceData] Abgerufene Daten :', carData);
-			const carCount = carData.length;
-			console.log('[CarDeviceData]: Anzahl Fahrzeuge', carCount);
-			const plateId = carData[0].plate_id;
-			console.log('[CarDeviceData]: Kfz', plateId);
-			const carDeviceId = carData[0].id;
-			console.log('[CarDeviceData]: CarDeviceId', carDeviceId);
-			const idCustomer = carData[0].customer_id;
-			console.log('[CarDeviceData]: Customer ID', idCustomer);
-			const idDevice = carData[0].iddevice;
-			console.log('[CarDeviceData]: ID-Device', idDevice);
-			//	Speichern der statischen Daten in Objekten
-			await this.storeData('CustomerID', idCustomer);
-			//await this.storeData('DeviceID', idDevice);
-			//
-			const mileage: number = parseFloat(carData[0].optimized_mileage);
-			console.log('[SingleCarDeviceData] km-Stand: ', mileage);
-			//
-			// API-Anfrage für SingleCarDeviceData
-			//const singleData = await client.getSingleCarDeviceData(carDeviceId);
-			//console.log('[SingleCarDeviceData] Abgerufene Daten :', singleData);
-			//
-			// API-Anfrage für GeoFence
-			const geo = await client.getGeofences();
-			//console.log('[Geofence] Abgerufene Daten: ', geo);
-			console.log('[Geofence] Anzahl Fences: ', geo.length);
-			geo.forEach(fence => console.log(fence.name));
-			//fs.writeFile('pajGeoFences.txt', Buffer.from(geo));
-			//
-			// API-Anfrage für AllRoutes
-			//const routes = await client.getAllRoutes(idDevice);
-			//console.log('[AllRoutes] Abgerufene Daten: ', routes);
-			//
-			//let innerData;
-			//let nArray = 0;
-			//const anzRoutes: number = Object.keys(routes).length;
-			//console.log('Anzahl Routen: ', anzRoutes);
-			/*
-			for (let j: number = 0; j < anzRoutes; j++) {
-				const tripStartDate = Object.keys(routes)[j];
-				console.log(j, tripStartDate); // Access the first element
-				for (const element in routes) {
-					const route: any = routes[element];
-					//console.log('inner: ', innerData[0]);
-					for (const element in route) {
-						//console.log('element: ', element);
-						const routeId = route[element].id;
-						console.log('Route ID: ', routeId);
-						const routeStartLat = route[element].start_lat;
-						console.log('  Start Lat: ', routeStartLat);
-						const routeStartOrt = route[element].start_address;
-						console.log('  Start Ort: ', routeStartOrt);
-					}
-				}
+			this.userId = await this.tokenManager.getUserId();
+			if (this.userId === undefined) {
+				this.log.error('User ID could not be retrieved');
+			} else {
+				this.log.debug(`Got access token successfully`);
+				this.log.info(`UserId: ${this.userId}`);
+				this.createCustomerFolder(this.userId);
+				//
+				this.setupStart();
 			}
-			*/
-			//
-			// API-Anfrage für TrackerData
-			const abfrageDatum = '2025-02-18';
-			const today_ts: number = client.datestringToTimestamp(abfrageDatum);
-			console.log(today_ts);
-			const tracks = await client.getTrackerData(idDevice, today_ts);
-			//console.log('[TrackerData] Abgerufene Daten: ', tracks);
-			console.log('[TrackerData] Anzahl Tracks: ', tracks.length);
-			//
-			const tracksLast = await client.getTrackerDataLast(idDevice, 5);
-			//console.log('[TrackerDataLast] Abgerufene Daten: ', tracksLast);
-			//console.log('[TrackerDataLast] Anzahl Tracks: ', tracksLast.length);
-			//
-			const battery = parseInt(String(tracksLast[0].battery), 16);
-			console.log('[SingleCarDeviceData] Batterie-Stand: ', battery);
-			//
-			// API-Anfrage für Notifications
-			//const notfs3 = await client.getNotifications(idDevice, 10); // Radiusalarm (ehemals 3)
-			//console.log('[Notifications] Abgerufene Daten: ', notfs3);
-			//#const notfs5 = await client.getNotifications(idDevice, 5); // Speedalarm
-			//#console.log('[Notifications] Abgerufene Daten: ', notfs5);
+		} catch (err: any) {
+			this.log.error(`Authentication failed: ${err.message}`);
+		}
+		this.log.info('Adapter is initialized.');
+	}
 
-			// API-Anfrage für pdf-Download
-			//const pdfBuffer = await client.getPdf_X(idDevice);
-			//const pdfBuffer = await client.getPdf(idDevice, today_ts);
-			//#const pdfBuffer = await client.getPdf_new(idDevice);
-			//#fs.writeFile('pajData_03_241118.pdf', Buffer.from(pdfBuffer));
-			//#console.log('[PDF getPdf] Abgerufene Daten: ', pdfBuffer);
-
-			// API-Anfrage für pdf-Download von Routen für einen ausgewählten Tag
-			//#const pdfBufferR = await client.getRoute(idDevice, today_ts);
-			//#fs.writeFile('pajData_03r.pdf', Buffer.from(pdfBufferR));
-			//console.log('[PDF getRoute] Abgerufene Daten: ', JSON.stringify(pdfBufferR));
-
+	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+		if (state) {
+			// The state was changed
+			this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			//
-		} catch (error) {
-			console.error('Fehler:', error);
+			// API-Anfrage für Customer
+			this.log.info('################################');
+			this.queryData();
+			//
+			// Hier können Sie weitere API-Aufrufe oder Logik hinzufügen, die auf den Statusänderungen basieren.
+			// The state was deleted
+			// this.log.info(`state ${id} deleted`);
 		}
 	}
 
-	/**
-	 * Is called when a subscribed state changes.
-	 * storeData is called when a state changes.
-	 *
-	 * @param customerId The ID of the state that changed
-	 * @param value The state object
-	 */
-	async storeData(customerId: string, value: number | string): Promise<void> {
-		console.log(`[storeData] CustomerID: ${customerId}, Value: ${value}`);
-		const dp_CustomerId = this.removeInvalidCharacters(customerId);
-		this.log.info(`[storeData] Customer "${dp_CustomerId}" with value: "${value}"`);
-		const dp_customerValue: string = this.removeInvalidCharacters(String(value));
-		await this.setObjectNotExistsAsync(dp_customerValue, {
-			type: 'device',
-			common: {
-				name: dp_CustomerId,
-			},
-			native: {},
-		});
-		//
-		await this.extendObject(dp_customerValue, {
-			common: {
-				name: dp_CustomerId,
-			},
-		});
-		//
-		const dp_State = `${dp_customerValue}.${dp_CustomerId}`;
-		await this.setObjectNotExistsAsync(dp_State, {
-			type: 'state',
-			common: {
-				name: {
-					en: 'Customer ID',
-					de: 'Kunden-ID',
-					ru: 'Идентификатор клиента',
-					pt: 'ID do cliente',
-					nl: 'Klant-ID',
-					fr: 'ID client',
-					it: 'ID cliente',
-					es: 'ID del cliente',
-					pl: 'ID klienta',
-					uk: 'Ідентифікатор клієнта',
-					'zh-cn': '客户ID',
-				},
-				type: 'number',
-				role: 'value',
-				unit: '',
-				read: true,
-				write: false,
-			},
-			native: {},
-		});
-		//
-		this.log.info(`[storeData] State: ${dp_State}" with value: "${value}"`);
-		//await this.setState(dp_State, { val: value, ack: true, q: 0x00 });
-		await this.setStateChangedAsync(`${dp_State}`, { val: value, ack: true });
+	private queryData(): void {
+		// This method is called when data should be requested
+		this.log.debug('(queryData#)');
+		// API-Anfrage für Customer
+		this.apiManager.getCustomer()
+			.then((userId) => {
+				this.log.info(`Queried Customer ID: ${userId}`);
+				// You can also set the state with the queried data
+				//this.setState('customer.userId', { val: userId, ack: true });
+			})
+			.catch((error) => {
+				this.log.error(`Error querying customer data: ${error.message}`);
+			});
+		// API-Anfrage für Device
+		this.queryGetDevice(); // funktioniert
+		this.queryGetCarDeviceData();
+	}
+
+	private queryGetDevice(): void {
+		// This method is called when data should be requested
+		this.log.debug('[queryGetDevice#]');
+		// API-Request für Device
+		this.apiManager.getDevice()
+			.then((device) => {
+				makeManualLinks.call(this, device);
+				// and here you can process the device data
+				for (const dev of device) {
+					//console.log(`dev: ${JSON.stringify(dev)}`);
+					this.log.debug(`Device ID: ${dev.id}, Name: ${dev.name}`);
+					// Create a folder for each device
+					this.storeDataToState('Name', dev.name);
+					this.storeDataToState('ModelNr', dev.model_nr);
+				}
+			})
+			.catch((error) => {
+				this.log.error(`Error querying device data: ${error.message}`);
+			});
+		// 
+		function makeManualLinks(this: Pajdr, device: Device[]): void {
+			// This method is called to create links for the manuals
+			this.log.silly('[makeManualLinks#]');
+			// You can add your logic here to create links based on the device data
+			const device_models = device[0].device_models;
+			if (device_models && device_models.length > 0) {
+				let manual_link: ManualLinkMap | null = null;
+				if (typeof device_models[0].manual_link === 'string') {
+					manual_link = JSON.parse(device_models[0].manual_link as string) as ManualLinkMap;
+				} else if (typeof device_models[0].manual_link === 'object' && device_models[0].manual_link !== null) {
+					manual_link = device_models[0].manual_link as ManualLinkMap;
+				}
+				if (manual_link) {
+					//console.log('[getDevice] Manual Link: ', manual_link);
+					//console.log('[getDevice] Manual Link DE: ', manual_link.de);
+					this.storeDataToState('manualLink', manual_link.de);
+				} else {
+					this.log.warn('[getDevice] No manual link available');
+				}
+			} else {
+				this.log.warn('[getDevice] No device models found');
+			}
+		}
+	}
+
+	private queryGetCarDeviceData(): void {
+		// This method is called when data should be requested
+		this.log.debug('(queryGetCarDeviceData#)');
+		// API-Request für CarDeviceData
+		this.apiManager.getCarDeviceData()
+			.then((carData) => {
+				// and here you can process the car data
+				for (const car of carData) {
+					//console.log(`car: ${JSON.stringify(car)}`);
+					this.log.debug(`Car ID: ${car.id}, Name: ${car.car_name}`);
+					// Create a folder for each car
+					this.storeDataToState('CarName', car.car_name);
+					this.storeDataToState('ModelName', car.model_name);
+					this.storeDataToState('LicensePlate', car.license_plate);
+					this.storeDataToState('Mileage', car.optimized_mileage);
+					this.storeDataToState('CreatedAt', car.created_at);
+				}
+			})
+			.catch((error) => {
+				this.log.error(`Error querying car device data: ${error.message}`);
+			});
 	}
 
 	//	#### Helper ####
@@ -246,6 +202,97 @@ class Pajdr extends utils.Adapter {
 		const regexPattern = '[^a-zA-Z0-9]+';
 		const regex = new RegExp(regexPattern, 'gu');
 		return inputString.replace(regex, '_');
+	}
+
+	storeDataToState(id: string, value: any): void {
+		//this.log.debug(`[storeDataToState] Storing data for User: ${this.userId} ID: ${id}, Value: ${value}`);
+		const dp_DeviceId = (this.removeInvalidCharacters(String(this.userId))) + '.' + this.removeInvalidCharacters(id);
+		// Create the state if it does not exist
+		this.setObjectNotExistsAsync(dp_DeviceId, {
+			type: 'state',
+			common: {
+				name: id,
+				type: Array.isArray(value)
+					? 'array'
+					: value === null
+						? 'mixed'
+						: typeof value === 'boolean'
+							? 'boolean'
+							: typeof value === 'number'
+								? 'number'
+								: typeof value === 'object'
+									? 'object'
+									: 'string',
+				role: 'state',
+				read: true,
+				write: false,
+			},
+			native: {},
+		})
+			.then(() => {
+				// Set the value of the state
+				this.setState(dp_DeviceId, { val: value, ack: true })
+					.then(() => {
+						this.log.debug(`[storeDataToState] State "${dp_DeviceId}" set to "${value}"`);
+					})
+					.catch((error) => {
+						this.log.error(`[storeDataToState] Error setting state ${dp_DeviceId}: ${error.message}`);
+					});
+			})
+			.catch((error) => {
+				this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
+			});
+	}
+
+	async createCustomerFolder(userId: number | undefined): Promise<void> {
+		if (!userId) {
+			this.log.warn('[createCustomerFolder] Invalid userId');
+			return;
+		}
+		const dp_UserId = this.removeInvalidCharacters(String(userId));
+		this.log.debug(`[createCustomerFolder] User "${dp_UserId}"`);
+		await this.setObjectNotExistsAsync(dp_UserId, {
+			type: 'device',
+			common: {
+				name: dp_UserId,
+			},
+			native: {},
+		});
+		//
+		await this.extendObject(dp_UserId, {
+			common: {
+				name: {
+					en: 'Customer ID',
+					de: 'Kunden-ID',
+					ru: 'Идентификатор клиента',
+					pt: 'ID do cliente',
+					nl: 'Klant-ID',
+					fr: 'ID client',
+					it: 'ID cliente',
+					es: 'ID del cliente',
+					pl: 'ID klienta',
+					uk: 'Ідентифікатор клієнта',
+					'zh-cn': '客户ID',
+				},
+			},
+		});
+	}
+
+	private async setupStart(): Promise<void> {
+		// Initialize the token manager
+		//this.tokenManager = new TokenManager(this.adapter, this.email, this.password);
+		await this.setObjectNotExistsAsync('Start', {
+			type: 'state',
+			common: {
+				name: 'Start',
+				type: 'boolean',
+				role: 'indicator',
+				read: true,
+				write: true,
+			},
+			native: {},
+		});
+		this.subscribeStates('Start'); // for requesting data
 	}
 
 	/**
