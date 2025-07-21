@@ -92,7 +92,7 @@ class Pajdr extends import_adapter_core.Adapter {
     this.queryGetCarDeviceData();
   }
   queryGetDevice() {
-    this.log.debug("[queryGetDevice#]");
+    this.log.debug("(queryGetDevice#)");
     this.apiManager.getDevice().then((device) => {
       makeManualLinks.call(this, device);
       for (const dev of device) {
@@ -171,6 +171,60 @@ class Pajdr extends import_adapter_core.Adapter {
       });
     }).catch((error) => {
       this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
+    });
+  }
+  storeDataToState_X(id, value, folder) {
+    const dp_DeviceId = this.removeInvalidCharacters(String(this.userId)) + "." + this.removeInvalidCharacters(id);
+    this.setObjectNotExistsAsync(dp_DeviceId, {
+      type: "state",
+      common: {
+        name: id,
+        type: Array.isArray(value) ? "array" : value === null ? "mixed" : typeof value === "boolean" ? "boolean" : typeof value === "number" ? "number" : typeof value === "object" ? "object" : "string",
+        role: "state",
+        read: true,
+        write: false
+      },
+      native: {}
+    }).then(() => {
+      this.setState(dp_DeviceId, { val: value, ack: true }).then(() => {
+        this.log.debug(`[storeDataToState] State "${dp_DeviceId}" set to "${value}"`);
+      }).catch((error) => {
+        this.log.error(`[storeDataToState] Error setting state ${dp_DeviceId}: ${error.message}`);
+      });
+    }).catch((error) => {
+      this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
+    });
+  }
+  async createDeviceFolder(userId) {
+    if (!userId) {
+      this.log.warn("[createCustomerFolder] Invalid userId");
+      return;
+    }
+    const dp_UserId = this.removeInvalidCharacters(String(userId));
+    this.log.debug(`[createCustomerFolder] User "${dp_UserId}"`);
+    await this.setObjectNotExistsAsync(dp_UserId, {
+      type: "device",
+      common: {
+        name: dp_UserId
+      },
+      native: {}
+    });
+    await this.extendObject(dp_UserId, {
+      common: {
+        name: {
+          en: "Customer ID",
+          de: "Kunden-ID",
+          ru: "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0438\u0435\u043D\u0442\u0430",
+          pt: "ID do cliente",
+          nl: "Klant-ID",
+          fr: "ID client",
+          it: "ID cliente",
+          es: "ID del cliente",
+          pl: "ID klienta",
+          uk: "\u0406\u0434\u0435\u043D\u0442\u0438\u0444\u0456\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0456\u0454\u043D\u0442\u0430",
+          "zh-cn": "\u5BA2\u6237ID"
+        }
+      }
     });
   }
   async createCustomerFolder(userId) {

@@ -124,7 +124,7 @@ class Pajdr extends Adapter {
 
 	private queryGetDevice(): void {
 		// This method is called when data should be requested
-		this.log.debug('[queryGetDevice#]');
+		this.log.debug('(queryGetDevice#)');
 		// API-Request für Device
 		this.apiManager.getDevice()
 			.then((device) => {
@@ -242,6 +242,80 @@ class Pajdr extends Adapter {
 			.catch((error) => {
 				this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
 			});
+	}
+
+	storeDataToState_X(id: string, value: any, folder: string): void {
+		//this.log.debug(`[storeDataToState] Storing data for User: ${this.userId} ID: ${id}, Value: ${value}`);
+		const dp_DeviceId = (this.removeInvalidCharacters(String(this.userId))) + '.' + this.removeInvalidCharacters(id);
+		// Create the state if it does not exist
+		this.setObjectNotExistsAsync(dp_DeviceId, {
+			type: 'state',
+			common: {
+				name: id,
+				type: Array.isArray(value)
+					? 'array'
+					: value === null
+						? 'mixed'
+						: typeof value === 'boolean'
+							? 'boolean'
+							: typeof value === 'number'
+								? 'number'
+								: typeof value === 'object'
+									? 'object'
+									: 'string',
+				role: 'state',
+				read: true,
+				write: false,
+			},
+			native: {},
+		})
+			.then(() => {
+				// Set the value of the state
+				this.setState(dp_DeviceId, { val: value, ack: true })
+					.then(() => {
+						this.log.debug(`[storeDataToState] State "${dp_DeviceId}" set to "${value}"`);
+					})
+					.catch((error) => {
+						this.log.error(`[storeDataToState] Error setting state ${dp_DeviceId}: ${error.message}`);
+					});
+			})
+			.catch((error) => {
+				this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
+			});
+	}
+
+	async createDeviceFolder(userId: number | undefined): Promise<void> {
+		if (!userId) {
+			this.log.warn('[createCustomerFolder] Invalid userId');
+			return;
+		}
+		const dp_UserId = this.removeInvalidCharacters(String(userId));
+		this.log.debug(`[createCustomerFolder] User "${dp_UserId}"`);
+		await this.setObjectNotExistsAsync(dp_UserId, {
+			type: 'device',
+			common: {
+				name: dp_UserId,
+			},
+			native: {},
+		});
+		//
+		await this.extendObject(dp_UserId, {
+			common: {
+				name: {
+					en: 'Customer ID',
+					de: 'Kunden-ID',
+					ru: 'Идентификатор клиента',
+					pt: 'ID do cliente',
+					nl: 'Klant-ID',
+					fr: 'ID client',
+					it: 'ID cliente',
+					es: 'ID del cliente',
+					pl: 'ID klienta',
+					uk: 'Ідентифікатор клієнта',
+					'zh-cn': '客户ID',
+				},
+			},
+		});
 	}
 
 	async createCustomerFolder(userId: number | undefined): Promise<void> {
