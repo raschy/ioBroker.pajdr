@@ -1,1 +1,7 @@
-{}
+{
+	"pajdr adapter settings": "PAJDR的适配器设置",
+	"email": "电子邮件",
+	"password": "密码",
+	"email_description": "用于登录到PAJ的电子邮件地址",
+	"password_description": "用于登录到PAJ的密码"
+}

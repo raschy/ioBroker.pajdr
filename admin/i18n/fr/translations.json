@@ -1,1 +1,7 @@
-{}
+{
+	"pajdr adapter settings": "Paramètres de l'adaptateur pour PAJDR",
+	"email": "E-mail",
+	"password": "Mot de passe",
+	"email_description": "Adresse e-mail utilisée pour la connexion à PAJ",
+	"password_description": "Mot de passe utilisé pour se connecter à PAJ"
+}
