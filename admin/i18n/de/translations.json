@@ -1,7 +1,8 @@
 {
-	"pajdr adapter settings": "Adaptereinstellungen für pajdr",
-	"email": "E-Mail",
-	"password": "Passwort",
-	"email_description": "E-Mail-Adresse, die für die Anmeldung bei PAJ verwendet wird",
-	"password_description": "Passwort für die Anmeldung bei PAJ"
+    "pajdr adapter settings": "Adaptereinstellungen für pajdr",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "email_description": "E-Mail-Adresse, die für die Anmeldung bei PAJ verwendet wird",
+    "password_description": "Passwort für die Anmeldung bei PAJ",
+    "credentials": "Anmeldeinformationen"
 }

@@ -46,11 +46,11 @@ class Pajdr extends import_adapter_core.Adapter {
     }
     this.log.info("Adapter is initialized.");
   }
-  onStateChange(id, state) {
+  async onStateChange(id, state) {
     if (state) {
       this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
       this.log.info("################################");
-      this.queryData();
+      await this.queryData();
     }
   }
   async queryData() {

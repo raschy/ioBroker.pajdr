@@ -2,28 +2,33 @@
 	"i18n": true,
 	"type": "panel",
 	"items": {
+		"_header": {
+            "type": "header",
+            "text": "credentials",
+            "size": 1
+        },
 		"email": {
-			"newLine": true,
 			"type": "text",
+			"label": "email",
 			"help": "email_description",
 			"xs": 12,
 			"sm": 12,
 			"md": 6,
 			"lg": 6,
 			"xl": 4,
-			"label": "email"
+			"newLine": true
 		},
 		"password": {
 			"type": "password",
+			"label": "password",
+			"help": "password_description",
 			"repeat": false,
 			"visible": false,
-			"help": "password_description",
 			"xs": 12,
 			"sm": 12,
 			"md": 6,
 			"lg": 6,
-			"xl": 4,
-			"label": "password"
+			"xl": 4
 		}
 	}
 }

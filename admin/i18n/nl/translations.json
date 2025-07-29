@@ -1,7 +1,8 @@
 {
-	"pajdr adapter settings": "Adapterinstellingen voor pajdr",
-	"email": "E-mail",
-	"password": "Wachtwoord",
-	"email_description": "E -mailadres dat wordt gebruikt om in te loggen bij PAJ",
-	"password_description": "Wachtwoord gebruikt om in te loggen op PAJ"
+    "pajdr adapter settings": "Adapterinstellingen voor pajdr",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "email_description": "E -mailadres dat wordt gebruikt om in te loggen bij PAJ",
+    "password_description": "Wachtwoord gebruikt om in te loggen op PAJ",
+    "credentials": "Referenties"
 }

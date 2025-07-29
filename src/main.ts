@@ -72,14 +72,14 @@ class Pajdr extends Adapter {
 		this.log.info('Adapter is initialized.');
 	}
 
-	private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
+	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
 		if (state) {
 			// The state was changed
 			this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			//
 			// API-Anfrage für Customer
 			this.log.info('################################');
-			this.queryData();
+			await this.queryData();
 			//
 			// Hier können Sie weitere API-Aufrufe oder Logik hinzufügen, die auf den Statusänderungen basieren.
 			// The state was deleted

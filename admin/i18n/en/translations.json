@@ -1,5 +1,6 @@
 {
 	"pajdr adapter settings": "Adapter settings for pajdr",
+	"credentials": "Credentials",
 	"email": "Email",
 	"password": "Password",
 	"email_description": "Email address used for login to PAJ",

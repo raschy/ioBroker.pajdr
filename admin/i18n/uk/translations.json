@@ -1,7 +1,8 @@
 {
-	"pajdr adapter settings": "Налаштування адаптера для pajdr",
-	"email": "Електронна пошта",
-	"password": "Пароль",
-	"email_description": "Електронна адреса, що використовується для входу в PAJ",
-	"password_description": "Пароль, що використовується для входу в PAJ"
+    "pajdr adapter settings": "Налаштування адаптера для pajdr",
+    "email": "Електронна пошта",
+    "password": "Пароль",
+    "email_description": "Електронна адреса, що використовується для входу в PAJ",
+    "password_description": "Пароль, що використовується для входу в PAJ",
+    "credentials": "Повноваження"
 }

@@ -1,7 +1,8 @@
 {
-	"pajdr adapter settings": "Configurações do adaptador para pajdr",
-	"email": "E-mail",
-	"password": "Senha",
-	"email_description": "Endereço de e -mail usado para login no PAJ",
-	"password_description": "Senha usada para login no PAJ"
+    "pajdr adapter settings": "Configurações do adaptador para pajdr",
+    "email": "E-mail",
+    "password": "Senha",
+    "email_description": "Endereço de e -mail usado para login no PAJ",
+    "password_description": "Senha usada para login no PAJ",
+    "credentials": "Credenciais"
 }
