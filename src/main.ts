@@ -87,7 +87,7 @@ class Pajdr extends Adapter {
 		}
 	}
 
-	private queryData(): void {
+	private async queryData(): Promise<void> {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
 		// API-Anfrage für Customer
@@ -102,7 +102,7 @@ class Pajdr extends Adapter {
 				this.log.error(`Error querying customer data: ${error.message}`);
 			});
 		// API-Anfrage für Device
-		this.queryGetDevice();
+		await this.queryGetDevice();
 		this.queryGetCarDeviceData();
 	}
 

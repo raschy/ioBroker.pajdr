@@ -53,14 +53,14 @@ class Pajdr extends import_adapter_core.Adapter {
       this.queryData();
     }
   }
-  queryData() {
+  async queryData() {
     this.log.debug("(queryData#)");
     this.apiManager.getCustomer().then((customerId) => {
       this.log.info(`Queried Customer ID: ${customerId}`);
     }).catch((error) => {
       this.log.error(`Error querying customer data: ${error.message}`);
     });
-    this.queryGetDevice();
+    await this.queryGetDevice();
     this.queryGetCarDeviceData();
   }
   async queryGetDevice() {
