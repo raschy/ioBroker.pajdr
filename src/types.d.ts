@@ -181,7 +181,7 @@ interface DeviceData {
 	setup_done: boolean;
 	privacy_mode: number;
 	share_link: boolean;
-	loadroute: 0,
+	loadroute: 0;
 	note: string | null;
 	note_color: string | null;
 	threedModel_name: string | null;
@@ -200,7 +200,7 @@ interface DeviceData {
 	subAccounts: DeviceSubAccounts[];
 	customImgUrl: string;
 	device_models: DeviceDeviceModels[];
-	appmode: null
+	appmode: null;
 }
 
 interface ManualLinkMap {

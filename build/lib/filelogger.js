@@ -22,12 +22,12 @@ __export(filelogger_exports, {
 });
 module.exports = __toCommonJS(filelogger_exports);
 var import_fs = require("fs");
-async function writeLog(fileObj, logEntry) {
+function writeLog(fileObj, logEntry) {
   const now = /* @__PURE__ */ new Date();
   const dateTime = now.toLocaleString("fr-CH");
   const data = `${dateTime}	${logEntry}
 `;
-  appendDataToFile(fileObj, data);
+  return appendDataToFile(fileObj, data);
 }
 async function appendDataToFile(fileObj, data) {
   if (!fileObj.path.endsWith("/")) {

@@ -18,6 +18,11 @@ interface TokenData {
 	expiresAt: number;
 }
 
+/**
+ * @file tokenManager.ts
+ * @description This file contains the TokenManager class which handles token management for the Paj GPS service.
+ * It includes methods to get access tokens, refresh tokens, and store token data.
+ */
 export class TokenManager {
 	private tokenData: TokenData | null = null;
 	private refreshingTokenPromise: Promise<string> | null = null;
@@ -26,6 +31,12 @@ export class TokenManager {
 	private releaseRefreshLock: (() => void) | null = null;
 	private baseUrl: string = 'https://connect.paj-gps.de/api/v1/';
 
+	/**
+	 * @description Initializes the TokenManager with the adapter, email, and password.
+	 * @param adapter The ioBroker adapter instance.
+	 * @param email The email address for authentication.
+	 * @param password The password for authentication.
+	 */
 	constructor(
 		private readonly adapter: ioBroker.Adapter,
 		private readonly email: string,
@@ -39,13 +50,19 @@ export class TokenManager {
 		//this.tokenPromise = this.initTokenData();
 	}
 
-	//
+	/**
+	 *
+	 * @returns The access token if available and valid, otherwise refreshes the token.
+	 * @throws {Error} If the token cannot be retrieved or refreshed.
+	 */
 	async getAccessToken(): Promise<string> {
-		this.adapter.log.debug('[getAccessToken] Entry');
+		this.adapter.log.debug('[getAccessToken#]');
 
 		// Token aus Storage holen
 		this.tokenData = await this.getStoredTokenData();
-		this.adapter.log.debug(`[getAccessToken] Loaded token (expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : 'N/A'})`);
+		this.adapter.log.debug(
+			`[getAccessToken] Loaded token (expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : 'N/A'})`,
+		);
 
 		// Token noch gültig?
 		if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
@@ -62,15 +79,14 @@ export class TokenManager {
 			if (this.tokenData && Date.now() < this.tokenData.expiresAt - 60000) {
 				this.adapter.log.debug('[getAccessToken] Got refreshed token after wait.');
 				return this.tokenData.accessToken;
-			} else {
-				this.adapter.log.error('[getAccessToken] No valid token even after waiting!');
-				throw new Error('Token refresh failed or timed out');
 			}
+			this.adapter.log.error('[getAccessToken] No valid token even after waiting!');
+			throw new Error('Token refresh failed or timed out');
 		}
 
 		// Jetzt exklusiv Sperre setzen
 		this.adapter.log.debug('[getAccessToken] Starting exclusive token refresh...');
-		this.refreshLock = new Promise<void>((resolve) => {
+		this.refreshLock = new Promise<void>(resolve => {
 			this.releaseRefreshLock = resolve;
 		});
 
@@ -79,8 +95,10 @@ export class TokenManager {
 			try {
 				this.adapter.log.info('[getAccessToken] Refreshing token via refresh_token...');
 				this.tokenData = await this.getTokenWithRefreshtoken();
-			} catch (e) {
-				this.adapter.log.warn('[getAccessToken] Refresh failed, doing full login...');
+			} catch (error: unknown) {
+				this.adapter.log.warn(
+					`[getAccessToken] Refresh failed, doing full login...${error instanceof Error ? error.message : ''}`,
+				);
 				this.tokenData = await this.getTokenWithLogin();
 			}
 
@@ -88,29 +106,37 @@ export class TokenManager {
 				throw new Error('Token refresh/login returned no data.');
 			}
 
-			this.storeToken();
+			await this.storeToken();
 			this.adapter.log.info('[getAccessToken] Token obtained successfully.');
 			return this.tokenData.accessToken;
-
 		} finally {
 			// Sperre aufheben
 			const release = this.releaseRefreshLock;
 			this.refreshLock = null;
 			this.releaseRefreshLock = null;
-			if (release) release();
+			if (release) {
+				release();
+			}
 		}
 	}
 
 	/**
 	 * Login to the API and retrieves the access token.
-	 * @returns {Promise<TokenData>} The token data containing access token, refresh token, and expiration time.
+	 *
+	 * @returns The token data containing access token, refresh token, and expiration time.
 	 * @throws {Error} If the login fails or the response is invalid.
 	 */
 	private async getTokenWithLogin(): Promise<TokenData> {
 		this.adapter.log.debug('[getTokenWithLogin#]');
-		const spezUrl: string = 'login?email=';
-		const urlBinder: string = '&password=';
-		const url = [this.baseUrl, spezUrl, encodeURIComponent(this.email), urlBinder, encodeURIComponent(this.password)].join('');
+		const spezUrl = 'login?email=';
+		const urlBinder = '&password=';
+		const url = [
+			this.baseUrl,
+			spezUrl,
+			encodeURIComponent(this.email),
+			urlBinder,
+			encodeURIComponent(this.password),
+		].join('');
 
 		const res = await fetch(url, {
 			method: 'POST',
@@ -122,9 +148,16 @@ export class TokenManager {
 			throw new Error(`Login failed: ${res.statusText}`);
 		}
 
-		const data = await res.json() as TokenResponse;
+		const data = (await res.json()) as TokenResponse;
+		//console.log('RAW Login ' + JSON.stringify(data));
 
-		if (!data.success || !data.success.token || !data.success.refresh_token || !data.success.expires_in || !data.success.userID) {
+		if (
+			!data.success ||
+			!data.success.token ||
+			!data.success.refresh_token ||
+			!data.success.expires_in ||
+			!data.success.userID
+		) {
 			throw new Error('Login response is missing required fields');
 		}
 
@@ -134,17 +167,22 @@ export class TokenManager {
 			userId: data.success.userID,
 			//expiresAt: Date.now() + data.success.expires_in * 1000,
 			//expiresAt: Date.now() + 900000, // 15 Minuten Puffer
-			expiresAt: Date.now() + 300000, // 5 Minuten
-		}
+			expiresAt: Date.now() + 86400000, // 24 Stunden
+		};
 
 		return tokenData;
 	}
 
+	/**
+	 *
+	 * @returns The token data containing access token, refresh token, and expiration time.
+	 * @throws {Error} If the token cannot be refreshed.
+	 */
 	private async getTokenWithRefreshtoken(): Promise<TokenData> {
 		//private async refreshAccessToken(refreshToken: string): Promise<TokenData> {
 		this.adapter.log.debug('[getTokenWithRefreshtoken#]');
-		const spezUrl: string = 'updatetoken?email=';
-		const urlBinder: string = '&refresh_token=';
+		const spezUrl = 'updatetoken?email=';
+		const urlBinder = '&refresh_token=';
 
 		// Check if refreshToken is available
 
@@ -153,7 +191,13 @@ export class TokenManager {
 			throw new Error('No refresh token available for refreshing access token');
 		}
 
-		const url = [this.baseUrl, spezUrl, encodeURIComponent(this.email), urlBinder, this.tokenData?.refreshToken].join('');
+		const url = [
+			this.baseUrl,
+			spezUrl,
+			encodeURIComponent(this.email),
+			urlBinder,
+			this.tokenData?.refreshToken,
+		].join('');
 		//const url = [this.baseUrl, spezUrl, encodeURIComponent(this.email), urlBinder, refreshToken].join('');
 
 		const res = await fetch(url, {
@@ -166,9 +210,15 @@ export class TokenManager {
 		if (!res.ok) {
 			throw new Error(`Token refresh failed: ${res.statusText}`);
 		}
-
-		const data = await res.json() as TokenResponse;
-		if (!data.success || !data.success.token || !data.success.refresh_token || !data.success.expires_in || !data.success.userID) {
+		const data = (await res.json()) as TokenResponse;
+		//console.log('RAW ' + data);
+		if (
+			!data.success ||
+			!data.success.token ||
+			!data.success.refresh_token ||
+			!data.success.expires_in ||
+			!data.success.userID
+		) {
 			throw new Error('Login response is missing required fields');
 		}
 
@@ -178,13 +228,18 @@ export class TokenManager {
 			userId: data.success.userID,
 			//expiresAt: Date.now() + data.success.expires_in * 1000,
 			//expiresAt: Date.now() + 900000, // 15 Minuten Puffer
-			expiresAt: Date.now() + 300000, // 5 Minuten Puffer
-		}
+			expiresAt: Date.now() + 86400000, // 24 Stunden
+		};
 		return tokenData;
 	}
 
-	private storeToken(): void {
-		//private async storeToken(tokenData: TokenData): Promise<void> {
+	/**
+	 *
+	 * @description Initializes the token data by retrieving it from storage or logging in.
+	 * If no token data is found, it attempts to log in and store the new token data.
+	 * If the login fails, it throws an error.
+	 */
+	private async storeToken(): Promise<void> {
 		this.adapter.log.debug('[storeToken#]');
 		// Check if tokenData is available
 		if (!this.tokenData || !this.tokenData.accessToken) {
@@ -192,14 +247,22 @@ export class TokenManager {
 			return;
 		}
 		// Store the token in the adapter's native object
-		this.adapter.extendForeignObject(`system.adapter.${this.adapter.namespace}`, {
+		await this.adapter.extendForeignObject(`system.adapter.${this.adapter.namespace}`, {
 			native: {
 				activeToken: this.tokenData,
-				//activeToken: tokenData,
 			},
 		});
 	}
 
+	/**
+	 * Initializes the token data.
+	 *
+	 * @returns The token data containing access token, refresh token, user ID, and expiration time.
+	 * @description Initializes the token data by retrieving it from storage or logging in.
+	 * If no token data is found, it attempts to log in and store the new token data.
+	 * If the login fails, it throws an error.
+	 * @throws {Error} If the login fails or the token data cannot be retrieved.
+	 */
 	async initTokenData(): Promise<TokenData> {
 		// Retrieve token Data
 		//return (async () => {
@@ -210,43 +273,62 @@ export class TokenManager {
 		if (!tokenData) {
 			try {
 				tokenData = await this.getTokenWithLogin();
-				this.storeToken();
+				await this.storeToken();
 				//await this.storeToken(tokenData);
 			} catch (error) {
-				this.adapter.log.error(`[initTokenData] Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				this.adapter.log.error(
+					`[initTokenData] Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+				);
 				throw new Error(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 			}
 		}
 
 		this.adapter.log.debug(`initTokenData: Tokendata: ${tokenData.expiresAt}`);
-		this.tokenData = tokenData
+		this.tokenData = tokenData;
 		this.tokenPromise = null;
 		return tokenData;
 		//})();
 	}
 
+	/**
+	 * Initializes the token data.
+	 *
+	 * @returns The stored token data if available, otherwise null.
+	 * @description Retrieves the stored token data from the adapter's native object.
+	 * If the token data is found, it logs the expiration time.
+	 * If no token data is found, it logs a debug message and returns null.
+	 * @throws {Error} If the token data cannot be retrieved.
+	 */
 	async getStoredTokenData(): Promise<TokenData | null> {
 		//this.adapter.log.debug('[getStoredTokenData#]');
 		// Return the stored token data if available
-		return await this.adapter.getForeignObjectAsync(`system.adapter.${this.adapter.namespace}`)
-			.then(obj => {
-				if (obj && obj.native && obj.native.activeToken) {
-					//this.adapter.log.debug(`[getStoredTokenData] Loaded token data: ${JSON.stringify(obj.native.activeToken)}`);
-					const tokenData = obj.native.activeToken; // nur temporär
-					//this.adapter.log.debug(`[getStoredTokenData] Loaded token data:${tokenData.accessToken.substring(0, 30)}`);
-					this.adapter.log.debug(`[getStoredTokenData] Loaded token data expires at: ${tokenData.expiresAt ? this.showTimeStamp(tokenData.expiresAt) : 'N/A'}`);
-					return {
-						accessToken: obj.native.activeToken.accessToken,
-						refreshToken: obj.native.activeToken.refreshToken,
-						userId: obj.native.activeToken.userId,
-						expiresAt: obj.native.activeToken.expiresAt,
-					};
-				}
-				this.adapter.log.debug('[getStoredTokenData] No token data found');
-				return null;
-			});
+		return await this.adapter.getForeignObjectAsync(`system.adapter.${this.adapter.namespace}`).then(obj => {
+			if (obj && obj.native && obj.native.activeToken) {
+				//this.adapter.log.debug(`[getStoredTokenData] Loaded token data: ${JSON.stringify(obj.native.activeToken)}`);
+				const tokenData = obj.native.activeToken; // nur temporär
+				//this.adapter.log.debug(`[getStoredTokenData] Loaded token data:${tokenData.accessToken.substring(0, 30)}`);
+				this.adapter.log.debug(
+					`[getStoredTokenData] Loaded token data expires at: ${tokenData.expiresAt ? this.showTimeStamp(tokenData.expiresAt) : 'N/A'}`,
+				);
+				return {
+					accessToken: obj.native.activeToken.accessToken,
+					refreshToken: obj.native.activeToken.refreshToken,
+					userId: obj.native.activeToken.userId,
+					expiresAt: obj.native.activeToken.expiresAt,
+				};
+			}
+			this.adapter.log.debug('[getStoredTokenData] No token data found');
+			return null;
+		});
 	}
 
+	/**
+	 * Formats a timestamp into a human-readable string.
+	 *
+	 * @param ts The timestamp to format.
+	 * @returns The formatted timestamp string.
+	 * @description Formats the given timestamp into a localized time string.
+	 */
 	private showTimeStamp(ts: number): string {
 		const date = new Date(ts);
 		//const dateString = date.toISOString();
@@ -256,21 +338,20 @@ export class TokenManager {
 	}
 
 	/**
-	 * Retrieves the user ID from the token data.
+	 * Retrieves the user ID (=customerId) from the token data.
 	 *
-	 * @returns {Promise<number | undefined>} The user ID if available, otherwise undefined.
+	 * @returns The user ID if available, otherwise undefined.
 	 * @throws {Error} If the token data is not available.
 	 */
-	async getUserId(): Promise<number | undefined> {
-		this.adapter.log.debug('[getUserId#]');
-		const userId = (await this.tokenData)?.userId;
-		if (userId === undefined) {
-			this.adapter.log.warn('[getUserId] No user ID available in token data');
-			throw new Error('User ID is not available in token data');
+	getCustomerId(): Promise<string | undefined> {
+		this.adapter.log.debug('[getCustomerId#]');
+		const customerId: string | undefined = this.tokenData ? String(this.tokenData.userId) : undefined;
+		if (customerId === undefined) {
+			this.adapter.log.warn('[getCustomerId] No customer ID available in token data');
+			throw new Error('Customer ID is not available in token data');
 		}
-		this.adapter.log.debug(`[getUserId] User ID: ${userId}`);
-		// Return the user ID from the token data
-		return userId;
+		this.adapter.log.debug(`[getCustomerId] Customer ID: ${customerId}`);
+		// Return the customer ID from the token data
+		return Promise.resolve(customerId);
 	}
 }
-

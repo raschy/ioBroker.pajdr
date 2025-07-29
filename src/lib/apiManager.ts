@@ -1,21 +1,34 @@
-
+/**
+ * @file ApiManager.ts
+ * @description This file contains the ApiManager class which handles API requests to the Paj GPS service.
+ * It includes methods to get customer data, device data, and car device data.
+ */
 export class ApiManager {
 	private tokenManager: any;
 	private baseUrl: string = 'https://connect.paj-gps.de/api/v1/';
 
+	/**
+	 *
+	 * @param adapter The ioBroker adapter instance.
+	 * @description Initializes the ApiManager with the adapter and token manager.
+	 * @throws Will throw an error if the adapter is not provided.
+	 * @throws Will throw an error if the token manager is not provided.
+	 * @description The ioBroker adapter instance.
+	 * @param tokenManager any
+	 */
 	constructor(
 		private readonly adapter: ioBroker.Adapter,
-		tokenManager: any
+		tokenManager: any,
 	) {
 		this.tokenManager = tokenManager;
 	}
 
 	/**
 	 * @description Get Customer Data (explicit User-ID)
-	 * @returns {Promise<number>} The User-ID of the customer
+	 * @returns The User-ID of the customer
 	 */
 	async getCustomer(): Promise<number> {
-		const url: string = `${this.baseUrl}customer`;
+		const url = `${this.baseUrl}customer`;
 		this.adapter.log.debug(`[getCustomer] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
@@ -38,22 +51,30 @@ export class ApiManager {
 			//console.log('DATA getCustomer: ', raw);
 			const dataSuccess: CustomerData = raw.success;
 			//console.log('SUCCESS', dataSuccess);
-			const userId: number = dataSuccess.id;
-			this.adapter.log.info(`[getCustomer] User ID: ${userId}`);
-			return userId;
+			const customerId: number = dataSuccess.id;
+			this.adapter.log.info(`[getCustomer] Customer ID: ${customerId}`);
+			return customerId;
 		} catch (error: unknown) {
 			if (error instanceof Error) {
-				this.adapter.log.error('[getCustomer] Error: ' + error.message);
+				this.adapter.log.error(`[getCustomer] Error: ${error.message}`);
 				throw error; // Fehler weiterwerfen, um den Aufrufer zu informieren
 			} else {
-				this.adapter.log.error('[getCustomer] Unknown error: ' + error);
+				const errMsg =
+					typeof error === 'object' && error !== null && 'stack' in error
+						? `[getCustomer] Unknown error: ${(error as { stack?: string }).stack}`
+						: `[getCustomer] Unknown error: ${String(error)}`;
+				this.adapter.log.error(errMsg);
 				throw new Error('Unknown error occurred');
 			}
 		}
 	}
 
+	/**
+	 * @returns DeviceData[]
+	 * @description Get Device Data
+	 */
 	async getDevice(): Promise<DeviceData[]> {
-		const url: string = `${this.baseUrl}device`;
+		const url = `${this.baseUrl}device`;
 		this.adapter.log.debug(`[getDevice] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
@@ -71,12 +92,12 @@ export class ApiManager {
 				throw new Error(`[getDevice] Failed to retrieve data: ${response.statusText}`);
 			}
 
-			const raw = await response.json() as DeviceRaw;
+			const raw = (await response.json()) as DeviceRaw;
 			//console.log('[getDevice] Raw: ', raw);
 			if (!raw.success || !Array.isArray(raw.success)) {
 				throw new Error('[getDevice] Invalid response format: success is not an array');
 			}
-			console.log('[getDevice] Count: ', raw.number_of_records);
+			//console.log('[getDevice] Count: ', raw.number_of_records);
 			//
 			if (raw.number_of_records === 0) {
 				this.adapter.log.warn('[getDevice] No devices found');
@@ -96,8 +117,12 @@ export class ApiManager {
 		}
 	}
 
+	/**
+	 * @returns CarData[]
+	 * @description Get Car Device Data
+	 */
 	async getCarDeviceData(): Promise<CarData[]> {
-		const url: string = `${this.baseUrl}sdevice/car`;
+		const url = `${this.baseUrl}sdevice/car`;
 		this.adapter.log.debug(`[getCarDeviceData] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
@@ -129,5 +154,4 @@ export class ApiManager {
 			}
 		}
 	}
-
-}	
+}

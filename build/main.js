@@ -1,27 +1,4 @@
 "use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var utils = __toESM(require("@iobroker/adapter-core"));
 var import_adapter_core = require("@iobroker/adapter-core");
 var import_apiManager = require("./lib/apiManager");
 var import_tokenManager = require("./lib/tokenManager");
@@ -38,18 +15,13 @@ class Pajdr extends import_adapter_core.Adapter {
     this.on("unload", this.onUnload.bind(this));
   }
   dataUpdateInterval;
-  userId;
+  customerId;
   //
   /**
-   * Is called when databases are connected and adapter received configuration.
+   * This method is called when the adapter starts.
+   * It initializes the token manager and API manager, retrieves the access token,
+   * and sets up the initial state of the adapter.
    */
-  async _onReady() {
-    const user_name = this.config.email;
-    const user_pass = this.config.password;
-    const executionInterval = 360;
-    const dataDir = utils.getAbsoluteDefaultDataDir();
-    console.log(`DIR ${dataDir}`);
-  }
   async onReady() {
     this.log.info("Adapter is ready");
     if (!this.config.email || !this.config.password) {
@@ -60,21 +32,21 @@ class Pajdr extends import_adapter_core.Adapter {
     this.apiManager = new import_apiManager.ApiManager(this, this.tokenManager);
     try {
       await this.tokenManager.getAccessToken();
-      this.userId = await this.tokenManager.getUserId();
-      if (this.userId === void 0) {
-        this.log.error("User ID could not be retrieved");
+      this.customerId = await this.tokenManager.getCustomerId();
+      if (this.customerId === void 0) {
+        this.log.error("Customer ID could not be retrieved");
       } else {
         this.log.debug(`Got access token successfully`);
-        this.log.info(`UserId: ${this.userId}`);
-        this.createCustomerFolder(this.userId);
-        this.setupStart();
+        this.log.info(`customerId: ${this.customerId}`);
+        await this.createCustomerFolder(this.customerId);
+        await this.setupStart();
       }
     } catch (err) {
       this.log.error(`Authentication failed: ${err.message}`);
     }
     this.log.info("Adapter is initialized.");
   }
-  async onStateChange(id, state) {
+  onStateChange(id, state) {
     if (state) {
       this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
       this.log.info("################################");
@@ -83,56 +55,70 @@ class Pajdr extends import_adapter_core.Adapter {
   }
   queryData() {
     this.log.debug("(queryData#)");
-    this.apiManager.getCustomer().then((userId) => {
-      this.log.info(`Queried Customer ID: ${userId}`);
+    this.apiManager.getCustomer().then((customerId) => {
+      this.log.info(`Queried Customer ID: ${customerId}`);
     }).catch((error) => {
       this.log.error(`Error querying customer data: ${error.message}`);
     });
     this.queryGetDevice();
     this.queryGetCarDeviceData();
   }
-  queryGetDevice() {
+  async queryGetDevice() {
     this.log.debug("(queryGetDevice#)");
-    this.apiManager.getDevice().then((device) => {
-      makeManualLinks.call(this, device);
+    try {
+      const device = await this.apiManager.getDevice();
+      await this.makeManualLinks(device);
       for (const dev of device) {
         this.log.debug(`Device ID: ${dev.id}, Name: ${dev.name}`);
-        this.storeDataToState("Name", dev.name);
-        this.storeDataToState("ModelNr", dev.model_nr);
       }
-    }).catch((error) => {
+    } catch (error) {
       this.log.error(`Error querying device data: ${error.message}`);
-    });
-    function makeManualLinks(device) {
-      this.log.silly("[makeManualLinks#]");
-      const device_models = device[0].device_models;
-      if (device_models && device_models.length > 0) {
-        let manual_link = null;
-        if (typeof device_models[0].manual_link === "string") {
-          manual_link = JSON.parse(device_models[0].manual_link);
-        } else if (typeof device_models[0].manual_link === "object" && device_models[0].manual_link !== null) {
-          manual_link = device_models[0].manual_link;
-        }
-        if (manual_link) {
-          this.storeDataToState("manualLink", manual_link.de);
+    }
+  }
+  async makeManualLinks(device) {
+    this.log.debug("[makeManualLinks#]");
+    const device_models = device[0].device_models;
+    if (device_models && device_models.length > 0) {
+      let manual_link = null;
+      if (typeof device_models[0].manual_link === "string") {
+        manual_link = JSON.parse(device_models[0].manual_link);
+      } else if (typeof device_models[0].manual_link === "object" && device_models[0].manual_link !== null) {
+        manual_link = device_models[0].manual_link;
+      }
+      if (manual_link) {
+        if (this.customerId !== void 0) {
+          await this.storeDataToState(this.customerId, "manualLink", manual_link.de);
         } else {
-          this.log.warn("[getDevice] No manual link available");
+          this.log.warn("[makeManualLinks] customerId is undefined, cannot store manual link");
         }
       } else {
-        this.log.warn("[getDevice] No device models found");
+        this.log.warn("[makeManualLinks] No manual link available");
       }
+    } else {
+      this.log.warn("[makeManualLinks] No device models found");
     }
   }
   queryGetCarDeviceData() {
     this.log.debug("(queryGetCarDeviceData#)");
-    this.apiManager.getCarDeviceData().then((carData) => {
+    this.apiManager.getCarDeviceData().then(async (carData) => {
       for (const car of carData) {
         this.log.debug(`Car ID: ${car.id}, Name: ${car.car_name}`);
-        this.storeDataToState("CarName", car.car_name);
-        this.storeDataToState("ModelName", car.model_name);
-        this.storeDataToState("LicensePlate", car.license_plate);
-        this.storeDataToState("Mileage", car.optimized_mileage);
-        this.storeDataToState("CreatedAt", car.created_at);
+        if (this.customerId !== void 0) {
+          await this.storeDataToState(this.customerId, "CarName", car.car_name, {
+            channelId: String(car.id)
+          });
+          await this.storeDataToState(this.customerId, "LicensePlate", car.license_plate, {
+            channelId: String(car.id)
+          });
+          await this.storeDataToState(this.customerId, "Mileage", car.optimized_mileage, {
+            channelId: String(car.id)
+          });
+          await this.storeDataToState(this.customerId, "CreatedAt", car.created_at, {
+            channelId: String(car.id)
+          });
+        } else {
+          this.log.warn("customerId is undefined, cannot create structured state for car");
+        }
       }
     }).catch((error) => {
       this.log.error(`Error querying car device data: ${error.message}`);
@@ -151,97 +137,21 @@ class Pajdr extends import_adapter_core.Adapter {
     const regex = new RegExp(regexPattern, "gu");
     return inputString.replace(regex, "_");
   }
-  storeDataToState(id, value) {
-    const dp_DeviceId = this.removeInvalidCharacters(String(this.userId)) + "." + this.removeInvalidCharacters(id);
-    this.setObjectNotExistsAsync(dp_DeviceId, {
-      type: "state",
-      common: {
-        name: id,
-        type: Array.isArray(value) ? "array" : value === null ? "mixed" : typeof value === "boolean" ? "boolean" : typeof value === "number" ? "number" : typeof value === "object" ? "object" : "string",
-        role: "state",
-        read: true,
-        write: false
-      },
-      native: {}
-    }).then(() => {
-      this.setState(dp_DeviceId, { val: value, ack: true }).then(() => {
-        this.log.debug(`[storeDataToState] State "${dp_DeviceId}" set to "${value}"`);
-      }).catch((error) => {
-        this.log.error(`[storeDataToState] Error setting state ${dp_DeviceId}: ${error.message}`);
-      });
-    }).catch((error) => {
-      this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
-    });
-  }
-  storeDataToState_X(id, value, folder) {
-    const dp_DeviceId = this.removeInvalidCharacters(String(this.userId)) + "." + this.removeInvalidCharacters(id);
-    this.setObjectNotExistsAsync(dp_DeviceId, {
-      type: "state",
-      common: {
-        name: id,
-        type: Array.isArray(value) ? "array" : value === null ? "mixed" : typeof value === "boolean" ? "boolean" : typeof value === "number" ? "number" : typeof value === "object" ? "object" : "string",
-        role: "state",
-        read: true,
-        write: false
-      },
-      native: {}
-    }).then(() => {
-      this.setState(dp_DeviceId, { val: value, ack: true }).then(() => {
-        this.log.debug(`[storeDataToState] State "${dp_DeviceId}" set to "${value}"`);
-      }).catch((error) => {
-        this.log.error(`[storeDataToState] Error setting state ${dp_DeviceId}: ${error.message}`);
-      });
-    }).catch((error) => {
-      this.log.error(`[storeDataToState] Error creating state ${dp_DeviceId}: ${error.message}`);
-    });
-  }
-  async createDeviceFolder(userId) {
-    if (!userId) {
-      this.log.warn("[createCustomerFolder] Invalid userId");
+  async createCustomerFolder(customerId) {
+    if (!customerId) {
+      this.log.warn("[createCustomerFolder] Invalid customerId");
       return;
     }
-    const dp_UserId = this.removeInvalidCharacters(String(userId));
-    this.log.debug(`[createCustomerFolder] User "${dp_UserId}"`);
-    await this.setObjectNotExistsAsync(dp_UserId, {
+    const dp_customerId = this.removeInvalidCharacters(customerId);
+    this.log.debug(`[createCustomerFolder] Customer "${dp_customerId}"`);
+    await this.setObjectNotExistsAsync(dp_customerId, {
       type: "device",
       common: {
-        name: dp_UserId
+        name: dp_customerId
       },
       native: {}
     });
-    await this.extendObject(dp_UserId, {
-      common: {
-        name: {
-          en: "Customer ID",
-          de: "Kunden-ID",
-          ru: "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0438\u0435\u043D\u0442\u0430",
-          pt: "ID do cliente",
-          nl: "Klant-ID",
-          fr: "ID client",
-          it: "ID cliente",
-          es: "ID del cliente",
-          pl: "ID klienta",
-          uk: "\u0406\u0434\u0435\u043D\u0442\u0438\u0444\u0456\u043A\u0430\u0442\u043E\u0440 \u043A\u043B\u0456\u0454\u043D\u0442\u0430",
-          "zh-cn": "\u5BA2\u6237ID"
-        }
-      }
-    });
-  }
-  async createCustomerFolder(userId) {
-    if (!userId) {
-      this.log.warn("[createCustomerFolder] Invalid userId");
-      return;
-    }
-    const dp_UserId = this.removeInvalidCharacters(String(userId));
-    this.log.debug(`[createCustomerFolder] User "${dp_UserId}"`);
-    await this.setObjectNotExistsAsync(dp_UserId, {
-      type: "device",
-      common: {
-        name: dp_UserId
-      },
-      native: {}
-    });
-    await this.extendObject(dp_UserId, {
+    await this.extendObject(dp_customerId, {
       common: {
         name: {
           en: "Customer ID",
@@ -272,6 +182,88 @@ class Pajdr extends import_adapter_core.Adapter {
       native: {}
     });
     this.subscribeStates("Start");
+  }
+  async storeDataToState(deviceId, stateId, value, options) {
+    var _a, _b;
+    const devicePath = deviceId;
+    const channelId = options == null ? void 0 : options.channelId;
+    const statePath = channelId ? `${deviceId}.${channelId}.${stateId}` : `${deviceId}.${stateId}`;
+    const detectedType = typeof value;
+    if (!["number", "string", "boolean"].includes(detectedType)) {
+      throw new Error(`Unsupported state value type: ${detectedType}`);
+    }
+    let role;
+    if (options == null ? void 0 : options.role) {
+      role = options.role;
+    } else {
+      switch (detectedType) {
+        case "number":
+          role = "value";
+          break;
+        case "boolean":
+          role = "indicator";
+          break;
+        case "string":
+          role = "text";
+          break;
+        default:
+          role = "state";
+      }
+    }
+    const stateCommon = {
+      name: (options == null ? void 0 : options.name) || stateId,
+      type: detectedType,
+      role,
+      read: (_a = options == null ? void 0 : options.read) != null ? _a : true,
+      write: (_b = options == null ? void 0 : options.write) != null ? _b : false
+    };
+    const existingDevice = await this.getObjectAsync(devicePath);
+    if (!existingDevice) {
+      await this.setObjectNotExistsAsync(devicePath, {
+        type: "device",
+        common: { name: deviceId },
+        native: {}
+      });
+    } else if (existingDevice.type !== "device") {
+      this.log.warn(
+        `[createStructuredState] '${devicePath}' exists but is type '${existingDevice.type}', expected 'device'`
+      );
+    }
+    if (channelId) {
+      const parts = channelId.split(".");
+      let path = devicePath;
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        path = `${path}.${part}`;
+        const isLast = i === parts.length - 1;
+        const expectedType = isLast ? "channel" : "folder";
+        const existing = await this.getObjectAsync(path);
+        if (!existing) {
+          await this.setObjectNotExistsAsync(path, {
+            type: expectedType,
+            common: { name: part },
+            native: {}
+          });
+        } else if (existing.type !== expectedType) {
+          this.log.warn(
+            `[createStructuredState] '${path}' exists but is type '${existing.type}', expected '${expectedType}'`
+          );
+        }
+      }
+    }
+    const existingObj = await this.getObjectAsync(statePath);
+    if (existingObj && existingObj.type !== "state") {
+      this.log.warn(
+        `[createStructuredState] Cannot create state at '${statePath}', object of type '${existingObj.type}' already exists there.`
+      );
+      return;
+    }
+    await this.setObjectNotExistsAsync(statePath, {
+      type: "state",
+      common: stateCommon,
+      native: {}
+    });
+    await this.setState(statePath, { val: value, ack: true });
   }
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!

@@ -22,6 +22,15 @@ __export(apiManager_exports, {
 });
 module.exports = __toCommonJS(apiManager_exports);
 class ApiManager {
+  /**
+   *
+   * @param adapter The ioBroker adapter instance.
+   * @description Initializes the ApiManager with the adapter and token manager.
+   * @throws Will throw an error if the adapter is not provided.
+   * @throws Will throw an error if the token manager is not provided.
+   * @description The ioBroker adapter instance.
+   * @param tokenManager any
+   */
   constructor(adapter, tokenManager) {
     this.adapter = adapter;
     this.tokenManager = tokenManager;
@@ -30,7 +39,7 @@ class ApiManager {
   baseUrl = "https://connect.paj-gps.de/api/v1/";
   /**
    * @description Get Customer Data (explicit User-ID)
-   * @returns {Promise<number>} The User-ID of the customer
+   * @returns The User-ID of the customer
    */
   async getCustomer() {
     const url = `${this.baseUrl}customer`;
@@ -49,19 +58,24 @@ class ApiManager {
       }
       const raw = await response.json();
       const dataSuccess = raw.success;
-      const userId = dataSuccess.id;
-      this.adapter.log.info(`[getCustomer] User ID: ${userId}`);
-      return userId;
+      const customerId = dataSuccess.id;
+      this.adapter.log.info(`[getCustomer] Customer ID: ${customerId}`);
+      return customerId;
     } catch (error) {
       if (error instanceof Error) {
-        this.adapter.log.error("[getCustomer] Error: " + error.message);
+        this.adapter.log.error(`[getCustomer] Error: ${error.message}`);
         throw error;
       } else {
-        this.adapter.log.error("[getCustomer] Unknown error: " + error);
+        const errMsg = typeof error === "object" && error !== null && "stack" in error ? `[getCustomer] Unknown error: ${error.stack}` : `[getCustomer] Unknown error: ${String(error)}`;
+        this.adapter.log.error(errMsg);
         throw new Error("Unknown error occurred");
       }
     }
   }
+  /**
+   * @returns DeviceData[]
+   * @description Get Device Data
+   */
   async getDevice() {
     const url = `${this.baseUrl}device`;
     this.adapter.log.debug(`[getDevice] URL: ${url}`);
@@ -81,7 +95,6 @@ class ApiManager {
       if (!raw.success || !Array.isArray(raw.success)) {
         throw new Error("[getDevice] Invalid response format: success is not an array");
       }
-      console.log("[getDevice] Count: ", raw.number_of_records);
       if (raw.number_of_records === 0) {
         this.adapter.log.warn("[getDevice] No devices found");
         return [];
@@ -98,6 +111,10 @@ class ApiManager {
       }
     }
   }
+  /**
+   * @returns CarData[]
+   * @description Get Car Device Data
+   */
   async getCarDeviceData() {
     const url = `${this.baseUrl}sdevice/car`;
     this.adapter.log.debug(`[getCarDeviceData] URL: ${url}`);
