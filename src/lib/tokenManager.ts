@@ -300,16 +300,13 @@ export class TokenManager {
 	 * @throws {Error} If the token data cannot be retrieved.
 	 */
 	async getStoredTokenData(): Promise<TokenData | null> {
-		//this.adapter.log.debug('[getStoredTokenData#]');
+		this.adapter.log.debug('[getStoredTokenData#]');
 		// Return the stored token data if available
 		return await this.adapter.getForeignObjectAsync(`system.adapter.${this.adapter.namespace}`).then(obj => {
 			if (obj && obj.native && obj.native.activeToken) {
 				//this.adapter.log.debug(`[getStoredTokenData] Loaded token data: ${JSON.stringify(obj.native.activeToken)}`);
-				const tokenData = obj.native.activeToken; // nur temporär
-				//this.adapter.log.debug(`[getStoredTokenData] Loaded token data:${tokenData.accessToken.substring(0, 30)}`);
-				this.adapter.log.debug(
-					`[getStoredTokenData] Loaded token data expires at: ${tokenData.expiresAt ? this.showTimeStamp(tokenData.expiresAt) : 'N/A'}`,
-				);
+				//const tokenData = obj.native.activeToken;
+		
 				return {
 					accessToken: obj.native.activeToken.accessToken,
 					refreshToken: obj.native.activeToken.refreshToken,

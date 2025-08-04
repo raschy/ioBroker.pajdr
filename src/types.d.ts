@@ -262,3 +262,13 @@ interface CarData {
 	device: object;
 	carDevice_id: number;
 }
+
+interface CreateStructuredStateOptions_old {
+	deviceName?: string | Record<string, string>;
+	channelId?: string;
+	channelName?: string | Record<string, string>;
+	stateName?: string | Record<string, string>;
+	role?: string;
+	type?: ioBroker.CommonType;
+	unit?: string;
+}
