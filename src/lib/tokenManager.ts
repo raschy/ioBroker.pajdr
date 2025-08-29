@@ -305,8 +305,6 @@ export class TokenManager {
 		return await this.adapter.getForeignObjectAsync(`system.adapter.${this.adapter.namespace}`).then(obj => {
 			if (obj && obj.native && obj.native.activeToken) {
 				//this.adapter.log.debug(`[getStoredTokenData] Loaded token data: ${JSON.stringify(obj.native.activeToken)}`);
-				//const tokenData = obj.native.activeToken;
-		
 				return {
 					accessToken: obj.native.activeToken.accessToken,
 					refreshToken: obj.native.activeToken.refreshToken,

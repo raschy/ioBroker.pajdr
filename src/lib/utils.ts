@@ -2,15 +2,21 @@
 
 type TranslatedName = string | { en: string; [key: string]: string };
 
+/**
+ * Options for creating a structured state.
+ */
 export interface CreateStructuredStateOptions {
 	deviceName?: TranslatedName;
 	channelId?: string;
 	channelName?: TranslatedName;
 	stateName?: TranslatedName;
 	role?: string;
-	type?: ioBroker.CommonType;
+	type?: string;
 	unit?: string;
 }
+/**
+ * Options for creating a structured writable state.
+ */
 export interface CreateStructuredWritableOptions {
 	deviceName?: TranslatedName;
 	channelId?: string;
@@ -22,10 +28,14 @@ export interface CreateStructuredWritableOptions {
 	q?: number;
 }
 
-// ID-Bereinigung
+/**
+ * Sanitize a string to create a valid ID.
+ * @param name The input string to sanitize.
+ * @returns The sanitized string.
+ */
 export function sanitizeId(name: string): string {
 	return name
-		.normalize("NFD")
+		.normalize('NFD')
 		.replace(/[\u0300-\u036f]/g, "")
 		.replace(/[^\w\d-_]/g, "_")
 		.replace(/_+/g, "_")
@@ -33,7 +43,12 @@ export function sanitizeId(name: string): string {
 		.toLowerCase();
 }
 
-// Namen absichern
+/**
+ * Ensures that a translated name is returned in a consistent format.
+ * @param name The input name to ensure.
+ * @param fallback A fallback name to use if the input is not valid.
+ * @returns The ensured translated name.
+ */
 export function ensureTranslatedName(
 	name?: string | { [lang: string]: string },
 	fallback?: string
@@ -56,7 +71,14 @@ export function ensureTranslatedName(
 }
 
 //	###########################
-
+/**
+ * Creates a structured state in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param deviceId The ID of the device.
+ * @param stateId The ID of the state.
+ * @param value The value to set for the state.
+ * @param options Options for creating the structured state.
+ */
 export async function createStructuredState(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
@@ -115,6 +137,14 @@ export async function createStructuredState(
 	await adapter.setState(statePath, { val: value, ack: true });
 }
 
+/**
+ * Creates a structured writable state in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param deviceId The ID of the device.
+ * @param stateId The ID of the state.
+ * @param value The value to set for the state.
+ * @param options Options for creating the structured writable state.
+ */
 export async function createStructuredWritableState(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
@@ -186,7 +216,13 @@ export async function createStructuredWritableState(
 
 //	###########################
 
-// 🔧 Device anlegen
+/**
+ * 🔧 Creates a device in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param deviceId The ID of the device.
+ * @param name The name of the device.
+ * @returns The ID of the created device.
+ */
 export async function createDevice(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
@@ -203,7 +239,14 @@ export async function createDevice(
 	return id;
 }
 
-// 🔧 Channel anlegen
+/**
+ * 🔧 Creates a channel in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param deviceId The ID of the device.
+ * @param channelId The ID of the channel.
+ * @param name The name of the channel.
+ * @returns The ID of the created channel.
+ */
 export async function createChannel(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
@@ -223,7 +266,14 @@ export async function createChannel(
 	return fullId;
 }
 
-// 🔧 Folder anlegen
+/**
+ * 🔧 Creates a folder in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param deviceId The ID of the device.
+ * @param folderId The ID of the folder.
+ * @param name The name of the folder.
+ * @returns The ID of the created folder.
+ */
 export async function createFolder(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
@@ -243,7 +293,14 @@ export async function createFolder(
 	return fullId;
 }
 
-// 🔧 State anlegen + schreiben
+/**
+ * 🔧 Creates a writable state in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param fullPath The full path of the state (e.g., "device.channel.state").
+ * @param stateId The ID of the state.
+ * @param value The initial value of the state.
+ * @param options Options for creating the writable state.
+ */
 export async function createWritableState(
 	adapter: ioBroker.Adapter,
 	fullPath: string, // z. B. "device.channel.state"
@@ -293,7 +350,14 @@ export async function createWritableState(
 	await adapter.setState(fullStatePath, state);
 }
 
-// 🔧 State anlegen, schreiben und bestätigen
+/**
+ * 🔧 Creates a state in the ioBroker.
+ * @param adapter The ioBroker adapter instance.
+ * @param fullPath The full path of the state (e.g., "device.channel.state").
+ * @param stateId The ID of the state.
+ * @param value The initial value of the state.
+ * @param options Options for creating the state.
+ */
 export async function createState(
 	adapter: ioBroker.Adapter,
 	fullPath: string, // z. B. "device.channel.state"
