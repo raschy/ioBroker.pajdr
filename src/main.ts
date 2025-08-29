@@ -60,54 +60,6 @@ class Pajdr extends Adapter {
 				this.log.info(`customerId: ${this.customerId}`);
 				await this.createCustomerFolder(this.customerId);
 				//
-				/*
-				const devId = await createDevice(this, "Mein Gerät", { de: "Mein Gerät", en: "My Device", nl: "Mijn Apparaat" });
-				const chId = await createChannel(this, devId, "Sensoren", { de: "Sensoren", en: "Sensors", nl: "SenSoren" });
-				await createWritableState(this, chId, "Temperatur", 23.4, {
-					name: { de: "Temperatur", en: "Temperature", nl: "Temperatuur" },
-					role: "value.temperature",
-					unit: "°C"
-				});
-				await createState(this, chId, "Meßwert", 55.8, {
-					name: { de: "Messwert", en: "Measured Value", nl: "Gemeten Waarde" },
-					role: "value.temperature",
-					unit: "°C"
-				});
-				await createState(this, chId, "temps", 11.8, { role: "value.temperature", unit: "°C" });
-
-				//
-				await createStructuredState(this, "heizung1", "temperatur", 21.5, {
-					deviceName: {
-						en: "Living Room",
-						de: "Wohnzimmer"
-					},
-					channelId: "istwerte",
-					channelName: {
-						en: "Actual Values",
-						de: "Ist-Werte"
-					},
-					stateName: {
-						en: "Temperature",
-						de: "Temperatur"
-					},
-					role: "value.temperature",
-					unit: "°C"
-				});
-				await createStructuredState(this, 'heizung2', 'tempState', 23.2, {
-					deviceName: 'Wohnzimmer',
-					channelId: 'istwerte',
-					channelName: 'Ist-Werte',
-					stateName: 'Temperatur',
-					role: 'value.temperature',
-					unit: '°C'
-				});
-				await createStructuredState(this, 'heizung3', 'tempStaTe', 23.3, {
-					deviceName: 'Küche',
-					stateName: 'TemperaTur',
-					role: 'value.temperature',
-					unit: '°C'
-				});
-				*/
 				//
 				await this.setupStart();
 			}

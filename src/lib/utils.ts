@@ -70,73 +70,6 @@ export function ensureTranslatedName(
 	return fallback ?? "unknown";
 }
 
-//	###########################
-/**
- * Creates a structured state in the ioBroker.
- * @param adapter The ioBroker adapter instance.
- * @param deviceId The ID of the device.
- * @param stateId The ID of the state.
- * @param value The value to set for the state.
- * @param options Options for creating the structured state.
- */
-export async function createStructuredState(
-	adapter: ioBroker.Adapter,
-	deviceId: string,
-	stateId: string,
-	value: ioBroker.StateValue,
-	options?: CreateStructuredStateOptions
-): Promise<void> {
-	const {
-		deviceName,
-		channelId,
-		channelName,
-		stateName,
-		role = "state",
-		type = typeof value as ioBroker.CommonType,
-		unit
-	} = options ?? {};
-
-	const devicePath = deviceId;
-	const channelPath = channelId ? `${devicePath}.${channelId}` : undefined;
-	const statePath = channelPath ? `${channelPath}.${stateId}` : `${devicePath}.${stateId}`;
-
-	// Device
-	await adapter.setObjectNotExistsAsync(devicePath, {
-		type: "device",
-		common: {
-			name: ensureTranslatedName(deviceName, deviceId)
-		},
-		native: {}
-	});
-
-	// Channel (optional)
-	if (channelPath) {
-		await adapter.setObjectNotExistsAsync(channelPath, {
-			type: "channel",
-			common: {
-				name: ensureTranslatedName(channelName, channelId!)
-			},
-			native: {}
-		});
-	}
-
-	// State
-	await adapter.setObjectNotExistsAsync(statePath, {
-		type: "state",
-		common: {
-			name: ensureTranslatedName(stateName, stateId),
-			role,
-			type,
-			unit,
-			read: true,
-			write: false
-		},
-		native: {}
-	});
-
-	await adapter.setState(statePath, { val: value, ack: true });
-}
-
 /**
  * Creates a structured writable state in the ioBroker.
  * @param adapter The ioBroker adapter instance.
@@ -213,8 +146,6 @@ export async function createStructuredWritableState(
 		
 	await adapter.setState(statePath, state);
 }
-
-//	###########################
 
 /**
  * 🔧 Creates a device in the ioBroker.
