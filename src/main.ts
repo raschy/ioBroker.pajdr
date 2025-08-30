@@ -69,7 +69,7 @@ class Pajdr extends Adapter {
 		this.log.info('Adapter is initialized.');
 	}
 
-	private onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+	private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
 		if (state) {
 			// The state was changed
 			this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
