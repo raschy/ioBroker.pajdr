@@ -2,9 +2,6 @@
 
 type TranslatedName = string | { en: string; [key: string]: string };
 
-/**
- * Options for creating a structured state.
- */
 export interface CreateStructuredStateOptions {
 	deviceName?: TranslatedName;
 	channelId?: string;
@@ -14,9 +11,7 @@ export interface CreateStructuredStateOptions {
 	type?: string;
 	unit?: string;
 }
-/**
- * Options for creating a structured writable state.
- */
+
 export interface CreateStructuredWritableOptions {
 	deviceName?: TranslatedName;
 	channelId?: string;
@@ -30,48 +25,53 @@ export interface CreateStructuredWritableOptions {
 
 /**
  * Sanitize a string to create a valid ID.
+ *
  * @param name The input string to sanitize.
  * @returns The sanitized string.
  */
 export function sanitizeId(name: string): string {
 	return name
 		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/[^\w\d-_]/g, "_")
-		.replace(/_+/g, "_")
-		.replace(/^_+|_+$/g, "")
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^\w\d-_]/g, '_')
+		.replace(/_+/g, '_')
+		.replace(/^_+|_+$/g, '')
 		.toLowerCase();
 }
 
 /**
  * Ensures that a translated name is returned in a consistent format.
+ *
  * @param name The input name to ensure.
  * @param fallback A fallback name to use if the input is not valid.
  * @returns The ensured translated name.
  */
 export function ensureTranslatedName(
 	name?: string | { [lang: string]: string },
-	fallback?: string
+	fallback?: string,
 ): string | { [lang: string]: string; en: string } {
-	if (!name && fallback) return fallback;
+	if (!name && fallback) {
+		return fallback;
+	}
 
-	if (typeof name === "string") {
+	if (typeof name === 'string') {
 		return name;
 	}
 
-	if (typeof name === "object") {
+	if (typeof name === 'object') {
 		// Stelle sicher, dass 'en' gesetzt ist – ggf. mit fallback
 		return {
 			...name,
-			en: name.en ?? fallback ?? "unknown"
+			en: name.en ?? fallback ?? 'unknown',
 		};
 	}
 
-	return fallback ?? "unknown";
+	return fallback ?? 'unknown';
 }
 
 /**
- * Creates a structured writable state in the ioBroker.
+ * 🔧 Creates a structured writable state in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param deviceId The ID of the device.
  * @param stateId The ID of the state.
@@ -83,17 +83,17 @@ export async function createStructuredWritableState(
 	deviceId: string,
 	stateId: string,
 	value: ioBroker.StateValue,
-	options?: CreateStructuredWritableOptions
-	): Promise<void> {
+	options?: CreateStructuredWritableOptions,
+): Promise<void> {
 	const {
 		deviceName,
 		channelId,
 		channelName,
 		stateName,
-		role = "state",
+		role = 'state',
 		type = typeof value as ioBroker.CommonType,
 		unit,
-		q
+		q,
 	} = options ?? {};
 
 	const devicePath = deviceId;
@@ -102,53 +102,54 @@ export async function createStructuredWritableState(
 
 	// Device
 	await adapter.setObjectNotExistsAsync(devicePath, {
-		type: "device",
+		type: 'device',
 		common: {
-			name: ensureTranslatedName(deviceName, deviceId)
+			name: ensureTranslatedName(deviceName, deviceId),
 		},
-		native: {}
+		native: {},
 	});
 
 	// Channel (optional)
 	if (channelPath) {
 		await adapter.setObjectNotExistsAsync(channelPath, {
-			type: "channel",
+			type: 'channel',
 			common: {
-				name: ensureTranslatedName(channelName, channelId!)
+				name: ensureTranslatedName(channelName, channelId), //!
 			},
-			native: {}
+			native: {},
 		});
 	}
 
 	// State (writeable)
 	await adapter.setObjectNotExistsAsync(statePath, {
-		type: "state",
+		type: 'state',
 		common: {
 			name: ensureTranslatedName(stateName, stateId),
 			role,
 			type,
 			unit,
 			read: true,
-			write: true
+			write: true,
 		},
-		native: {}
+		native: {},
 	});
 	//await adapter.setState(statePath, { val: value, ack: false, q: q !== undefined ? q : undefined } as ioBroker.State);
 
-	const state: Pick<ioBroker.State, "val" | "ack"> & Partial<Pick<ioBroker.State, "q">> = {
+	const state: Pick<ioBroker.State, 'val' | 'ack'> & Partial<Pick<ioBroker.State, 'q'>> = {
 		val: value,
-		ack: false
-		};
+		ack: false,
+	};
 
-		if (q !== undefined) {
-			state.q = q as ioBroker.State["q"];
-		}
-		
+	if (q !== undefined) {
+		state.q = q as ioBroker.State['q'];
+	}
+
 	await adapter.setState(statePath, state);
 }
 
 /**
  * 🔧 Creates a device in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param deviceId The ID of the device.
  * @param name The name of the device.
@@ -157,21 +158,22 @@ export async function createStructuredWritableState(
 export async function createDevice(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
-	name?: string | { [lang: string]: string }
+	name?: string | { [lang: string]: string },
 ): Promise<string> {
 	const id = sanitizeId(deviceId);
 	await adapter.setObjectNotExistsAsync(id, {
-		type: "device",
+		type: 'device',
 		common: {
-			name: ensureTranslatedName(name, id)
+			name: ensureTranslatedName(name, id),
 		},
-		native: {}
+		native: {},
 	});
 	return id;
 }
 
 /**
  * 🔧 Creates a channel in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param deviceId The ID of the device.
  * @param channelId The ID of the channel.
@@ -182,23 +184,24 @@ export async function createChannel(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
 	channelId: string,
-	name?: string | { [lang: string]: string }
+	name?: string | { [lang: string]: string },
 ): Promise<string> {
 	const devId = sanitizeId(deviceId);
 	const chId = sanitizeId(channelId);
 	const fullId = `${devId}.${chId}`;
 	await adapter.setObjectNotExistsAsync(fullId, {
-		type: "channel",
+		type: 'channel',
 		common: {
-			name: ensureTranslatedName(name, chId)
+			name: ensureTranslatedName(name, chId),
 		},
-		native: {}
+		native: {},
 	});
 	return fullId;
 }
 
 /**
  * 🔧 Creates a folder in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param deviceId The ID of the device.
  * @param folderId The ID of the folder.
@@ -209,32 +212,38 @@ export async function createFolder(
 	adapter: ioBroker.Adapter,
 	deviceId: string,
 	folderId: string,
-	name?: string | { [lang: string]: string }
+	name?: string | { [lang: string]: string },
 ): Promise<string> {
 	const devId = sanitizeId(deviceId);
 	const fId = sanitizeId(folderId);
 	const fullId = `${devId}.${fId}`;
 	await adapter.setObjectNotExistsAsync(fullId, {
-		type: "folder",
+		type: 'folder',
 		common: {
-			name: ensureTranslatedName(name, fId)
+			name: ensureTranslatedName(name, fId),
 		},
-		native: {}
+		native: {},
 	});
 	return fullId;
 }
 
 /**
  * 🔧 Creates a writable state in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param fullPath The full path of the state (e.g., "device.channel.state").
  * @param stateId The ID of the state.
  * @param value The initial value of the state.
  * @param options Options for creating the writable state.
+ * @param options.name optional name for the state
+ * @param options.role optional role for the state
+ * @param options.type optional type for the state
+ * @param options.unit optional unit for the state
+ * @param options.q optional quality for the state
  */
 export async function createWritableState(
 	adapter: ioBroker.Adapter,
-	fullPath: string, // z. B. "device.channel.state"
+	fullPath: string, //z.B. "device.channel.state"
 	stateId: string,
 	value: ioBroker.StateValue,
 	options?: {
@@ -242,40 +251,34 @@ export async function createWritableState(
 		role?: string;
 		type?: ioBroker.CommonType;
 		unit?: string;
-		q?: ioBroker.State["q"];
-	}
+		q?: ioBroker.State['q'];
+	},
 ): Promise<void> {
-	const {
-		name,
-		role = "state",
-		type = typeof value as ioBroker.CommonType,
-		unit,
-		q
-	} = options ?? {};
+	const { name, role = 'state', type = typeof value as ioBroker.CommonType, unit, q } = options ?? {};
 
 	const stId = sanitizeId(stateId);
 	const fullStatePath = `${fullPath}.${stId}`;
 
 	await adapter.setObjectNotExistsAsync(fullStatePath, {
-		type: "state",
+		type: 'state',
 		common: {
 			name: ensureTranslatedName(name, stId),
 			role,
 			type,
 			unit,
 			read: true,
-			write: true
+			write: true,
 		},
-		native: {}
+		native: {},
 	});
 
-	const state: Pick<ioBroker.State, "val" | "ack"> & Partial<Pick<ioBroker.State, "q">> = {
+	const state: Pick<ioBroker.State, 'val' | 'ack'> & Partial<Pick<ioBroker.State, 'q'>> = {
 		val: value,
-		ack: false
+		ack: false,
 	};
 
 	if (q !== undefined) {
-		state.q = q as ioBroker.State["q"];
+		state.q = q as ioBroker.State['q'];
 	}
 
 	await adapter.setState(fullStatePath, state);
@@ -283,15 +286,21 @@ export async function createWritableState(
 
 /**
  * 🔧 Creates a state in the ioBroker.
+ *
  * @param adapter The ioBroker adapter instance.
  * @param fullPath The full path of the state (e.g., "device.channel.state").
  * @param stateId The ID of the state.
  * @param value The initial value of the state.
  * @param options Options for creating the state.
+ * @param options.name optional name for the state
+ * @param options.role optional role for the state
+ * @param options.type optional type for the state
+ * @param options.unit optional unit for the state
+ * @param options.q optional quality for the state
  */
 export async function createState(
 	adapter: ioBroker.Adapter,
-	fullPath: string, // z. B. "device.channel.state"
+	fullPath: string, // z.B. "device.channel.state"
 	stateId: string,
 	value: ioBroker.StateValue,
 	options?: {
@@ -299,40 +308,34 @@ export async function createState(
 		role?: string;
 		type?: ioBroker.CommonType;
 		unit?: string;
-		q?: ioBroker.State["q"];
-	}
+		q?: ioBroker.State['q'];
+	},
 ): Promise<void> {
-	const {
-		name,
-		role = "state",
-		type = typeof value as ioBroker.CommonType,
-		unit,
-		q
-	} = options ?? {};
+	const { name, role = 'state', type = typeof value as ioBroker.CommonType, unit, q } = options ?? {};
 
 	const stId = sanitizeId(stateId);
 	const fullStatePath = `${fullPath}.${stId}`;
 
 	await adapter.setObjectNotExistsAsync(fullStatePath, {
-		type: "state",
+		type: 'state',
 		common: {
 			name: ensureTranslatedName(name, stId),
 			role,
 			type,
 			unit,
 			read: true,
-			write: false
+			write: false,
 		},
-		native: {}
+		native: {},
 	});
 
-	const state: Pick<ioBroker.State, "val" | "ack"> & Partial<Pick<ioBroker.State, "q">> = {
+	const state: Pick<ioBroker.State, 'val' | 'ack'> & Partial<Pick<ioBroker.State, 'q'>> = {
 		val: value,
-		ack: true
+		ack: true,
 	};
 
 	if (q !== undefined) {
-		state.q = q as ioBroker.State["q"];
+		state.q = q as ioBroker.State['q'];
 	}
 
 	await adapter.setState(fullStatePath, state);

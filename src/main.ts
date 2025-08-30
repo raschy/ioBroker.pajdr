@@ -8,7 +8,7 @@ import type * as utils from '@iobroker/adapter-core';
 import { Adapter } from '@iobroker/adapter-core';
 import { ApiManager } from './lib/apiManager';
 import { TokenManager } from './lib/tokenManager';
-import { createChannel, createDevice, createState } from "./lib/utils";
+import { createChannel, createDevice, createState } from './lib/utils';
 //import { writeLog } from './lib/filelogger';
 //const fileHandle = { path: '/home/raschy/ioBroker.pajdr', file: 'logs1.txt' };
 
@@ -69,14 +69,14 @@ class Pajdr extends Adapter {
 		this.log.info('Adapter is initialized.');
 	}
 
-	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+	private onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
 		if (state) {
 			// The state was changed
 			this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			//
 			// API-Anfrage für Customer
 			this.log.info('################################');
-			await this.queryData();
+			this.queryData();
 			//
 			// Hier können Sie weitere API-Aufrufe oder Logik hinzufügen, die auf den Statusänderungen basieren.
 			// The state was deleted
@@ -84,7 +84,7 @@ class Pajdr extends Adapter {
 		}
 	}
 
-	private async queryData(): Promise<void> {
+	private queryData(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
 		// API-Anfrage für Customer
@@ -111,13 +111,13 @@ class Pajdr extends Adapter {
 			.getDevice()
 			.then(async DeviceData => {
 				// and here you can process the car data
-				const manualLink = this.getLinkForManualLang(DeviceData[0].device_models?.[0]?.manual_link);
+				// const manualLink = this.getLinkForManualLang(DeviceData[0].device_models?.[0]?.manual_link);
 				// Create a device for each DeviceData
 				for (const dev of DeviceData) {
 					this.log.debug(`Device ID: ${dev.id}, Name: ${dev.name}`);
 					// Create a channel for each car
 					if (this.customerId !== undefined) {
-						createChannel(this, this.customerId, String(dev.id), {
+						await createChannel(this, this.customerId, String(dev.id), {
 							en: 'Tracker Number',
 							de: 'Tracker Nummer',
 							ru: 'Трекер номер',
@@ -128,9 +128,9 @@ class Pajdr extends Adapter {
 							es: 'Número de rastreador',
 							pl: 'Numer nadajnika',
 							uk: 'Номер трекера',
-							'zh-cn': '跟踪器编号'
+							'zh-cn': '跟踪器编号',
 						});
-						createState(this, this.customerId + '.' + String(dev.id), 'IMEI', dev.imei, {
+						await createState(this, `${this.customerId}.${String(dev.id)}`, 'IMEI', dev.imei, {
 							name: {
 								en: 'Device IMEI',
 								de: 'Geräte IMEI',
@@ -138,28 +138,34 @@ class Pajdr extends Adapter {
 								ru: 'IMEI устройства',
 								pt: 'IMEI do Dispositivo',
 								it: 'IMEI del Dispositivo',
-								fr: 'IMEI de l\'Appareil',
+								fr: '"IMEI de l\'Appareil"',
 								es: 'IMEI del Dispositivo',
 								pl: 'IMEI Urządzenia',
 								uk: 'IMEI Пристрою',
 								'zh-cn': '设备IMEI',
-							}
+							},
 						});
-						createState(this, this.customerId + '.' + String(dev.id), 'Car Device ID', dev.carDevice_id, {
-							name: {
-								en: 'Car Device ID',
-								de: 'Fahrzeug ID',
-								nl: 'Auto ID',
-								ru: 'ID автомобиля',
-								pt: 'ID do Dispositivo',
-								it: 'ID del Dispositivo',
-								fr: 'ID de l\'Appareil',
-								es: 'ID del Dispositivo',
-								pl: 'ID Urządzenia',
-								uk: 'ID Пристрою',
-								'zh-cn': '设备ID',
-							}
-						});
+						await createState(
+							this,
+							`${this.customerId}.${String(dev.id)}`,
+							'Car Device ID',
+							dev.carDevice_id,
+							{
+								name: {
+									en: 'Car Device ID',
+									de: 'Fahrzeug ID',
+									nl: 'Auto ID',
+									ru: 'ID автомобиля',
+									pt: 'ID do Dispositivo',
+									it: 'ID del Dispositivo',
+									fr: '"ID de l\'Appareil"',
+									es: 'ID del Dispositivo',
+									pl: 'ID Urządzenia',
+									uk: 'ID Пристрою',
+									'zh-cn': '设备ID',
+								},
+							},
+						);
 					} else {
 						this.log.warn('customerId is undefined, cannot create structured state for device');
 					}
@@ -183,7 +189,7 @@ class Pajdr extends Adapter {
 					this.log.debug(`Car ID: ${car.id}, Name: ${car.car_name}`);
 					// Create a folder for each car
 					if (this.customerId !== undefined) {
-						createChannel(this, this.customerId, String(car.id), {
+						await createChannel(this, this.customerId, String(car.id), {
 							en: 'Vehicle ID',
 							de: 'Fahrzeug ID',
 							ru: 'ID транспортного средства',
@@ -191,80 +197,97 @@ class Pajdr extends Adapter {
 							it: 'ID veicolo',
 							fr: 'Identification du véhicule',
 							es: 'Identificación de vehículos',
-  							pl: 'Identyfikator pojazdu',
-  							uk: 'Код автомобіля',
-  							'zh-cn': '车辆编号'
+							pl: 'Identyfikator pojazdu',
+							uk: 'Код автомобіля',
+							'zh-cn': '车辆编号',
 						});
-						createState(this, this.customerId + '.' + String(car.id), 'Vehicle Manufacturer', car.car_name, {
+						await createState(
+							this,
+							`${this.customerId}.${String(car.id)}`,
+							'Vehicle Manufacturer',
+							car.car_name,
+							{
+								name: {
+									en: 'Vehicle Manufacturer',
+									de: 'Hersteller des Fahrzeugs',
+									ru: 'Производитель транспортного средства',
+									pt: 'Fabricante do veículo',
+									nl: 'Fabrikant van het voertuig',
+									fr: 'Fabricant du véhicule',
+									it: "Nome dell'automobile",
+									es: 'Nombre del coche',
+									pl: 'Nazwa samochodu',
+									uk: 'Назва автомобіля',
+									'zh-cn': '车名',
+								},
+							},
+						);
+						await createState(
+							this,
+							`${this.customerId}.${String(car.id)}`,
+							'License Plate',
+							car.license_plate,
+							{
+								name: {
+									en: 'License Plate',
+									de: 'Kennzeichen',
+									ru: 'Номерной знак',
+									pt: 'Placa do veículo',
+									nl: 'Kenteken',
+									fr: '"Plaque d\'immatriculation"',
+									it: 'Targa',
+									es: 'Matrícula',
+									pl: 'Numer rejestracyjny',
+									uk: 'Номерний знак',
+									'zh-cn': '车牌',
+								},
+							},
+						);
+						await createState(
+							this,
+							`${this.customerId}.${String(car.id)}`,
+							'Mileage',
+							car.optimized_mileage,
+							{
+								name: {
+									en: 'Mileage',
+									de: 'Kilometerstand',
+									ru: 'Пробег',
+									pt: 'Quilometragem',
+									nl: 'Kilometerstand',
+									fr: 'Kilométrage',
+									it: 'Chilometraggio',
+									es: 'Kilometraje',
+									pl: 'Przebieg',
+									uk: 'Пробіг',
+									'zh-cn': '里程',
+								},
+							},
+						);
+						await createState(this, `${this.customerId}.${String(car.id)}`, 'Created at', car.created_at, {
 							name: {
-								en: 'Vehicle Manufacturer',
-  								de: 'Hersteller des Fahrzeugs',
-  								ru: 'Производитель транспортного средства',
-  								pt: 'Fabricante do veículo',
-  								nl: 'Fabrikant van het voertuig',
-  								fr: 'Fabricant du véhicule',
-  								it: 'Nome dell\'automobile',
-  								es: 'Nombre del coche',
-  								pl: 'Nazwa samochodu',
-  								uk: 'Назва автомобіля',
-  								'zh-cn': '车名'
-							}
+								en: 'Created At',
+								de: 'Erstellt am',
+								ru: 'Создано',
+								pt: 'Criado em',
+								nl: 'Aangemaakt op',
+								fr: 'Créé le',
+								it: 'Creato il',
+								es: 'Creado el',
+								pl: 'Utworzono',
+								uk: 'Створено',
+								'zh-cn': '创建于',
+							},
 						});
-						createState(this, this.customerId + '.' + String(car.id), 'License Plate', car.license_plate, {
-							name: {
-								en: 'License Plate',
-  								de: 'Kennzeichen',
-  								ru: 'Номерной знак',
-  								pt: 'Placa do veículo',
-  								nl: 'Kenteken',
-  								fr: 'Plaque d\'immatriculation',
-  								it: 'Targa',
-  								es: 'Matrícula',
-  								pl: 'Numer rejestracyjny',
-  								uk: 'Номерний знак',
-  								'zh-cn': '车牌'
-							}
-						});
-  						createState(this, this.customerId + '.' + String(car.id), 'Mileage', car.optimized_mileage, {
-  							name: {
-  								en: 'Mileage',
-  								de: 'Kilometerstand',
-  								ru: 'Пробег',
-  								pt: 'Quilometragem',
-  								nl: 'Kilometerstand',
-  								fr: 'Kilométrage',
-  								it: 'Chilometraggio',
-  								es: 'Kilometraje',
-  								pl: 'Przebieg',
-  								uk: 'Пробіг',
-  								'zh-cn': '里程'
-  							}
-  						});
-  						createState(this, this.customerId + '.' + String(car.id), 'Created at', car.created_at, {
-  							name: {
-  								en: 'Created At',
-  								de: 'Erstellt am',
-  								ru: 'Создано',
-  								pt: 'Criado em',
-  								nl: 'Aangemaakt op',
-  								fr: 'Créé le',
-  								it: 'Creato il',
-  								es: 'Creado el',
-  								pl: 'Utworzono',
-  								uk: 'Створено',
-  								'zh-cn': '创建于'
-  							}
-  						});
-  					} else {
-  						this.log.warn('customerId is undefined, cannot create structured state for car');
-  					}
-  				}
-  			})
-  			.catch(error => {
-  				this.log.error(`Error querying car device data: ${error.message}`);
-  			});
+					} else {
+						this.log.warn('customerId is undefined, cannot create structured state for car');
+					}
+				}
+			})
+			.catch(error => {
+				this.log.error(`Error querying car device data: ${error.message}`);
+			});
 	}
-
 
 	//	#### Helper ####
 	//
@@ -276,12 +299,17 @@ class Pajdr extends Adapter {
 	}
 
 	private async createCustomerFolder(customerId: string | undefined): Promise<void> {
-		if (typeof customerId !== 'string' || customerId.trim() === '' || customerId === 'undefined' || customerId === 'null' ) {
+		if (
+			typeof customerId !== 'string' ||
+			customerId.trim() === '' ||
+			customerId === 'undefined' ||
+			customerId === 'null'
+		) {
 			this.log.warn('[createCustomerFolder] Invalid customerId');
 			return;
 		}
 
-		const createdDevice = await createDevice(this, customerId, { 
+		const createdDevice = await createDevice(this, customerId, {
 			en: 'Customer ID',
 			de: 'Kunden-ID',
 			ru: 'Идентификатор клиента',
@@ -292,10 +320,9 @@ class Pajdr extends Adapter {
 			es: 'ID del cliente',
 			pl: 'ID klienta',
 			uk: 'Ідентифікатор клієнта',
-			'zh-cn': '客户ID', 
+			'zh-cn': '客户ID',
 		});
 		this.log.debug(`[createCustomerFolder] Customer "${createdDevice}"`);
-
 	}
 
 	private async setupStart(): Promise<void> {
@@ -315,10 +342,7 @@ class Pajdr extends Adapter {
 		this.subscribeStates('Start'); // for requesting data
 	}
 
-	private async getLinkForManualLang(
-		raw: string | Record<string, string> | null | undefined
-		): Promise<void> {
-
+	private async getLinkForManualLang(raw: string | Record<string, string> | null | undefined): Promise<void> {
 		if (!raw) {
 			this.log.warn('[getLinkForManualLang] No device models in DeviceData found');
 			return;
@@ -332,12 +356,14 @@ class Pajdr extends Adapter {
 			} else if (typeof raw === 'object') {
 				parsed = raw;
 			}
-		} catch (err) {
+		} catch (err: any) {
 			this.log.warn(`[getLinkForManualLang] JSON parsing failed: ${err}`);
 			return;
 		}
 
-		if (!parsed || typeof parsed !== 'object') return;
+		if (!parsed || typeof parsed !== 'object') {
+			return;
+		}
 
 		// Retrieving the system language at runtime
 		const systemConfig = await this.getForeignObjectAsync('system.config');
@@ -353,15 +379,15 @@ class Pajdr extends Adapter {
 		// Link for user language found
 		if (parsed[userLang]) {
 			this.log.debug(`[getLinkForManualLang] User language: ${userLang}`);
-		}else{
+		} else {
 			// Fallback to English, if available, otherwise nothing
-			parsed[userLang] = parsed['en'] ?? '';
+			parsed[userLang] = parsed.en ?? '';
 			this.log.debug(`[getLinkForManualLang] User language: ${userLang} [en]`);
 		}
-		
+
 		if (this.customerId !== undefined) {
 			if (parsed[userLang]) {
-				createState(this, this.customerId, 'manualLink', parsed[userLang], {
+				await createState(this, this.customerId, 'manualLink', parsed[userLang], {
 					name: {
 						en: 'manualLink',
 						de: 'Link zum Handbuch',
@@ -374,89 +400,13 @@ class Pajdr extends Adapter {
 						pl: 'Link do podręcznika',
 						uk: 'Посилання на посібник',
 						'zh-cn': '手册链接',
-					}
+					},
 				});
 			} else {
 				this.log.warn('[getLinkForManualLang] No link to manual available');
 			}
 		} else {
 			this.log.warn('[getLinkForManualLang] customerId is undefined, cannot store manual link');
-		}
-	}
-
-	async storeDataToState(
-		deviceId: string,
-		stateId: string,
-		value: ioBroker.StateValue,
-		options?: CreateStructuredStateOptions_old
-		): Promise<void> {
-		const {
-			deviceName,
-			channelId,
-			channelName,
-			stateName,
-			role = "state",
-			type = typeof value as ioBroker.CommonType,
-			unit
-		} = options ?? {};
-
-		const devicePath = deviceId;
-		const channelPath = channelId ? `${devicePath}.${channelId}` : undefined;
-		const statePath = channelPath ? `${channelPath}.${stateId}` : `${devicePath}.${stateId}`;
-
-		// 1. Device anlegen
-		await this.setObjectNotExistsAsync(devicePath, {
-			type: "device",
-			common: {
-				name: ensureTranslatedName(deviceName ?? deviceId, deviceId)
-			},
-			native: {}
-		});
-
-		// 2. Channel anlegen (optional)
-		if (channelPath) {
-			await this.setObjectNotExistsAsync(channelPath, {
-				type: "channel",
-				common: {
-					name: ensureTranslatedName(channelName ?? channelId!, channelId!)
-				},
-				native: {}
-			});
-		}
-
-		// 3. State anlegen
-		await this.setObjectNotExistsAsync(statePath, {
-			type: "state",
-			common: {
-				name: ensureTranslatedName(stateName ?? stateId, stateId),
-				role,
-				type,
-				unit,
-				read: true,
-				write: false
-			},
-			native: {}
-		});
-
-		// 4. Wert schreiben
-		await this.setState(statePath, { val: value, ack: true });
-		
-		function ensureTranslatedName(
-			name: string | Record<string, string>,
-			fallback: string
-			): string | { en: string; [key: string]: string } {
-	
-			if (typeof name === "string") {
-				return name;
-			}
-
-			// Absicherung: wenn 'en' fehlt, fallback einfügen
-			if (typeof name.en !== "string") {
-				return { en: fallback, ...name };
-			}
-
-			// explizit typisieren, damit TS zufrieden ist
-			return name as { en: string; [key: string]: string };
 		}
 	}
 
