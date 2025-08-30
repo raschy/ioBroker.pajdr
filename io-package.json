@@ -17,7 +17,6 @@
                 "zh-cn": "首次出版"
             }
         },
-        "title": "PAJ DataReader",
         "titleLang": {
             "en": "PAJ DataReader",
             "de": "PAJ DataReader",
@@ -48,18 +47,14 @@
             "raschy <raschy@gmx.de>"
         ],
         "keywords": [
-            "ioBroker",
 			"Reader for GPS-tracker",
-			"PAJ",
-            "Smart Home",
-            "home automation"
+			"PAJ"
         ],
         "licenseInformation": {
             "type": "free",
             "license": "MIT"
         },
         "platform": "Javascript/Node.js",
-        "main": "build/main.js",
         "icon": "pajdr.png",
         "enabled": true,
         "extIcon": "https://raw.githubusercontent.com/raschy/ioBroker.pajdr/main/admin/pajdr.png",
