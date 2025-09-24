@@ -154,4 +154,49 @@ export class ApiManager {
 			}
 		}
 	}
+
+	async getAllLastPositions(deviceIDs: number[], fromLastPoint = false): Promise<Position[]> {
+    	const url = `${this.baseUrl}trackerdata/getalllastpositions`;
+    	this.adapter.log.debug(`[getAllLastPositions] URL: ${url}`);
+
+    	const token: string = await this.tokenManager.getAccessToken();
+
+    	try {
+        	const payload = { deviceIDs, fromLastPoint };
+
+        	const response = await fetch(url, {
+            	method: "POST",
+            	headers: {
+                	Authorization: `Bearer ${token}`,
+                	"Content-Type": "application/json",
+            	},
+            	body: JSON.stringify(payload),
+        	});
+
+			this.adapter.log.debug(`[getAllLastPositions] PayLoad: ${JSON.stringify(payload)}`);
+			this.adapter.log.debug(`[getAllLastPositions] Response: ${JSON.stringify(response)}`);
+			//this.adapter.log.debug(`[getAllLastPositions] Response Body: ${JSON.stringify(await response.json())}`);
+
+        	if (!response.ok) {
+            	throw new Error(`[getAllLastPositions] Failed: ${response.status} ${response.statusText}`);
+        	}
+
+        	const data = (await response.json()) as GetAllLastPositionsResponse;
+
+        	console.log(`[getAllLastPositions] DatA: ${JSON.stringify(data)}`);
+
+        	// Logs der Positionen
+        	for (const pos of data.success) {
+            	this.adapter.log.info(
+                	`Position ID: ${pos.id}, Latitude: ${pos.lat}, Longitude: ${pos.lng}`
+            	);
+        	}
+
+        	return data.success;
+    	} catch (err: any) {
+        	this.adapter.log.error(`[getAllLastPositions] Error: ${err.message}`);
+        	throw err;
+    	}
+	}
+
 }

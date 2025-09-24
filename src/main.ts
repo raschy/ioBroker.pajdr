@@ -23,7 +23,7 @@ class Pajdr extends Adapter {
 			...options,
 			name: 'pajdr',
 		});
-
+		debugger; //mal direkt in den Konstruktor der Klasse.
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
 		// this.on('objectChange', this.onObjectChange.bind(this));
@@ -32,6 +32,7 @@ class Pajdr extends Adapter {
 	}
 	private dataUpdateInterval: NodeJS.Timeout | undefined;
 	private customerId: string | undefined;
+	private deviceId: string | undefined;
 	//
 	/**
 	 * This method is called when the adapter starts.
@@ -40,11 +41,15 @@ class Pajdr extends Adapter {
 	 */
 	async onReady(): Promise<void> {
 		this.log.info('Adapter is ready');
+		this.log.info("#####  SERVER <-###-> TEST " + new Date().toISOString());
+		console.log('Adapter startet ...');
 
 		if (!this.config.email || !this.config.password) {
 			this.log.error('Email or password not set in configuration');
 			return;
 		}
+		console.log(`Config E-mail: ${this.config.email}`);
+		debugger;
 
 		this.tokenManager = new TokenManager(this, this.config.email, this.config.password);
 		this.apiManager = new ApiManager(this, this.tokenManager);
@@ -75,7 +80,7 @@ class Pajdr extends Adapter {
 			this.log.silly(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			//
 			// API-Anfrage für Customer
-			this.log.info('################################');
+			console.log('############   API   ############');
 			this.queryData();
 			//
 			// Hier können Sie weitere API-Aufrufe oder Logik hinzufügen, die auf den Statusänderungen basieren.
@@ -87,6 +92,7 @@ class Pajdr extends Adapter {
 	private queryData(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
+		
 		// API-Anfrage für Customer
 		this.apiManager
 			.getCustomer()
@@ -100,9 +106,12 @@ class Pajdr extends Adapter {
 			});
 		// API-Anfrage für Device
 		this.queryGetDevice();
+		//this.deviceId = '1312315';
 		this.queryGetCarDeviceData();
+		//this.queryAllLastPositions();
 	}
 
+	
 	private queryGetDevice(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryGetDevice#)');
@@ -166,6 +175,7 @@ class Pajdr extends Adapter {
 								},
 							},
 						);
+						// //#return dev.id;
 					} else {
 						this.log.warn('customerId is undefined, cannot create structured state for device');
 					}
@@ -287,6 +297,49 @@ class Pajdr extends Adapter {
 			.catch(error => {
 				this.log.error(`Error querying car device data: ${error.message}`);
 			});
+	}
+
+
+	private queryAllLastPositions(): void {
+		// This method is called when data should be requested
+		this.log.debug('(queryAllLastPositions#)');
+		this.log.debug (`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
+		// API-Request für CarDeviceData
+		this.apiManager
+			.getAllLastPositions([1312315])
+			.then(async positions => {
+				// and here you can process the car data
+				for (const position of positions) {
+					//#console.log(`car: ${JSON.stringify(car)}`);
+					this.log.debug(`Position ID: ${position.id}, Latitude: ${(Math.round(position.lat * 10000) / 10000)}, Longitude: ${(Math.round(position.lng * 10000) / 10000)}`);
+				}
+			})
+			.catch(error => {
+				this.log.error(`Error querying car device data: ${error.message}`);
+			});
+	}
+
+
+	/**
+	 * Retrieves the last known positions for all devices.
+	 */
+	private _queryAllLastPositions(): void {
+		this.log.debug('(queryAllLastPositions#)');
+		// Example: Call an API method to get all last positions, then process them
+		this.log.debug (`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
+		if (typeof this.apiManager.getAllLastPositions === 'function') {
+			this.apiManager
+				.getAllLastPositions([1312315])
+				.then((positions: any) => {
+					this.log.info(`Retrieved last positions: ${JSON.stringify(positions)}`);
+					// Process positions as needed
+				})
+				.catch((error: any) => {
+					this.log.error(`Error retrieving last positions: ${error.message}`);
+				});
+		} else {
+			this.log.warn('queryAllLastPositions API method is not implemented.');
+		}
 	}
 
 	//	#### Helper ####

@@ -203,6 +203,23 @@ interface DeviceData {
 	appmode: null;
 }
 
+interface DeviceRouteProfile {
+	id: number;
+	name: string;
+}
+
+interface DeviceSubAccounts {
+	id: number;
+	email: string;
+}
+
+interface DeviceDeviceModels {
+	id: number;
+	name: string;
+	manufacturer: string;
+	manual_link?: string | ManualLinkMap | null;
+	// Add other properties as needed
+}
 interface ManualLinkMap {
 	de?: string;
 	en?: string;
@@ -262,6 +279,30 @@ interface CarData {
 	device: object;
 	carDevice_id: number;
 }
+
+interface Position {
+    id: string;
+    lat: number;
+    lng: number;
+    direction: number;
+    dateunix: number;
+    battery: number;
+    speed: number;
+    iddevice: number;
+    steps: number;
+    heartbeat: number;
+    accuracy: number;
+    wifi: string | null;
+    note: string | null;
+    upt: string | null;
+}
+
+interface GetAllLastPositionsResponse {
+    success: Position[];
+    number_of_records: number;
+}
+
+
 
 interface CreateStructuredStateOptions_old {
 	deviceName?: string | Record<string, string>;

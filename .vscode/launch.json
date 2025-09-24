@@ -1,60 +1,45 @@
 {
-	// Verwendet IntelliSense zum Ermitteln möglicher Attribute.
-	// Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
-	// Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
 	"version": "0.2.0",
-	"configurations": [
-		{
-			"name": "Launch TS normal",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceFolder}/src/main.ts",
-			//"program": "${workspaceFolder}/build/main.js",
-			"args": [
-				"--instance",
-				"0",
-				"--force",
-				"--logs",
-				"--debug"
-			],
-			"skipFiles": [
-				"<node_internals>/**"
-			],
-			"outFiles": [
-				"${workspaceFolder}/build/*.(m|c|)js",
-				"!**/node_modules/**"
-			],
-			"stopOnEntry": false,
-			"console": "internalConsole",
-			"outputCapture": "std",
-			"env": {
-				"NODE_PATH": "${workspaceFolder}/.dev-server/default/node_modules"
-			}
-		},
-		{
-			"name": "default Launch js ioBroker Adapter ",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceFolder}/build/main.js",
-			"args": [
-				"--debug",
-				"0"
-			],
-			"skipFiles": [
-				"<node_internals>/**"
-			],
-			"cwd": "${workspaceFolder}/.dev-server/default",
-			"stopOnEntry": false,
-			"sourceMaps": true,
-			"console": "internalConsole",
-			"outputCapture": "std",
+    "configurations": [
+        {
+            "request": "attach",
+            "name": "Attach to remote",
+            "port": 9229,
 			"resolveSourceMapLocations": [
-				"${workspaceFolder}/**",
-				"**/node_modules/**"
-			],
-			"env": {
-				"NODE_PATH": "${workspaceFolder}/.dev-server/default/node_modules"
-			}
-		}
-	]
+                "${workspaceFolder}/.dev-server/default/node_modules/**/*.js"
+            ],
+            "restart": true,
+            "type": "node"
+        },
+		{
+  			"type": "node",
+  			"request": "attach",
+  			"name": "Attach to ioBroker (9229)",
+  			"port": 9229,
+  			"restart": true,
+  			"timeout": 60000,
+  			"localRoot": "${workspaceFolder}/src",
+  			"remoteRoot": "/home/raschy/ioBroker.pajdr/src",
+  			"outFiles": [
+    			"${workspaceFolder}/build/**/*.js"
+  			],
+  			"sourceMaps": true,
+  			"skipFiles": ["<node_internals>/**"]
+		},
+    	{
+            "type": "node",
+            "request": "launch",
+            "name": "default Launch ioBroker Adapter ",
+            "skipFiles": ["<node_internals>/**"],
+            "args": ["--debug", "0"],
+            "program": "node_modules/iobroker.pajdr/build/main.js",
+            "cwd": "${workspaceFolder}/.dev-server/default",
+            "runtimeExecutable": "/usr/bin/node",
+            "stopOnEntry": false,
+            "sourceMaps": true,
+            "console": "internalConsole",
+            "outputCapture": "std",
+            "resolveSourceMapLocations": ["${workspaceFolder}/**" /* , "!*node_modules/**" */]
+        },
+    ],
 }
