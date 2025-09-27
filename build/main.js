@@ -9,7 +9,6 @@ class Pajdr extends import_adapter_core.Adapter {
       ...options,
       name: "pajdr"
     });
-    debugger;
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
@@ -22,14 +21,12 @@ class Pajdr extends import_adapter_core.Adapter {
    */
   async onReady() {
     this.log.info("Adapter is ready");
-    this.log.info("#####  SERVER <-###-> TEST " + (/* @__PURE__ */ new Date()).toISOString());
+    this.log.info(`#####  SERVER <-###-> TEST ${(/* @__PURE__ */ new Date()).toISOString()}`);
     console.log("Adapter startet ...");
     if (!this.config.email || !this.config.password) {
       this.log.error("Email or password not set in configuration");
       return;
     }
-    console.log(`Config E-mail: ${this.config.email}`);
-    debugger;
     this.tokenManager = new import_tokenManager.TokenManager(this, this.config.email, this.config.password);
     this.apiManager = new import_apiManager.ApiManager(this, this.tokenManager);
     try {
@@ -237,7 +234,8 @@ class Pajdr extends import_adapter_core.Adapter {
     this.log.debug(`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
     this.apiManager.getAllLastPositions([1312315]).then(async (positions) => {
       for (const position of positions) {
-        this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 1e4) / 1e4}, Longitude: ${Math.round(position.lng * 1e4) / 1e4}`);
+        this.log.debug(`Position ID: 
+						${position.id}, Latitude: ${Math.round(position.lat * 1e4) / 1e4}, Longitude: ${Math.round(position.lng * 1e4) / 1e4}`);
       }
     }).catch((error) => {
       this.log.error(`Error querying car device data: ${error.message}`);

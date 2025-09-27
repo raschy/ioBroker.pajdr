@@ -281,28 +281,26 @@ interface CarData {
 }
 
 interface Position {
-    id: string;
-    lat: number;
-    lng: number;
-    direction: number;
-    dateunix: number;
-    battery: number;
-    speed: number;
-    iddevice: number;
-    steps: number;
-    heartbeat: number;
-    accuracy: number;
-    wifi: string | null;
-    note: string | null;
-    upt: string | null;
+	id: string;
+	lat: number;
+	lng: number;
+	direction: number;
+	dateunix: number;
+	battery: number;
+	speed: number;
+	iddevice: number;
+	steps: number;
+	heartbeat: number;
+	accuracy: number;
+	wifi: string | null;
+	note: string | null;
+	upt: string | null;
 }
 
 interface GetAllLastPositionsResponse {
-    success: Position[];
-    number_of_records: number;
+	success: Position[];
+	number_of_records: number;
 }
-
-
 
 interface CreateStructuredStateOptions_old {
 	deviceName?: string | Record<string, string>;

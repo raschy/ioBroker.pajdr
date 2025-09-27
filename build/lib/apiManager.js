@@ -164,9 +164,7 @@ class ApiManager {
       const data = await response.json();
       console.log(`[getAllLastPositions] DatA: ${JSON.stringify(data)}`);
       for (const pos of data.success) {
-        this.adapter.log.info(
-          `Position ID: ${pos.id}, Latitude: ${pos.lat}, Longitude: ${pos.lng}`
-        );
+        this.adapter.log.info(`Position ID: ${pos.id}, Latitude: ${pos.lat}, Longitude: ${pos.lng}`);
       }
       return data.success;
     } catch (err) {

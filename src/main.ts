@@ -23,7 +23,6 @@ class Pajdr extends Adapter {
 			...options,
 			name: 'pajdr',
 		});
-		debugger; //mal direkt in den Konstruktor der Klasse.
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
 		// this.on('objectChange', this.onObjectChange.bind(this));
@@ -41,16 +40,13 @@ class Pajdr extends Adapter {
 	 */
 	async onReady(): Promise<void> {
 		this.log.info('Adapter is ready');
-		this.log.info("#####  SERVER <-###-> TEST " + new Date().toISOString());
+		this.log.info(`#####  SERVER <-###-> TEST ${new Date().toISOString()}`);
 		console.log('Adapter startet ...');
 
 		if (!this.config.email || !this.config.password) {
 			this.log.error('Email or password not set in configuration');
 			return;
 		}
-		console.log(`Config E-mail: ${this.config.email}`);
-		debugger;
-
 		this.tokenManager = new TokenManager(this, this.config.email, this.config.password);
 		this.apiManager = new ApiManager(this, this.tokenManager);
 
@@ -92,7 +88,7 @@ class Pajdr extends Adapter {
 	private queryData(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
-		
+
 		// API-Anfrage für Customer
 		this.apiManager
 			.getCustomer()
@@ -111,7 +107,6 @@ class Pajdr extends Adapter {
 		//this.queryAllLastPositions();
 	}
 
-	
 	private queryGetDevice(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryGetDevice#)');
@@ -299,11 +294,10 @@ class Pajdr extends Adapter {
 			});
 	}
 
-
 	private queryAllLastPositions(): void {
 		// This method is called when data should be requested
 		this.log.debug('(queryAllLastPositions#)');
-		this.log.debug (`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
+		this.log.debug(`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
 		// API-Request für CarDeviceData
 		this.apiManager
 			.getAllLastPositions([1312315])
@@ -311,7 +305,8 @@ class Pajdr extends Adapter {
 				// and here you can process the car data
 				for (const position of positions) {
 					//#console.log(`car: ${JSON.stringify(car)}`);
-					this.log.debug(`Position ID: ${position.id}, Latitude: ${(Math.round(position.lat * 10000) / 10000)}, Longitude: ${(Math.round(position.lng * 10000) / 10000)}`);
+					this.log.debug(`Position ID: 
+						${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
 				}
 			})
 			.catch(error => {
@@ -319,14 +314,13 @@ class Pajdr extends Adapter {
 			});
 	}
 
-
 	/**
 	 * Retrieves the last known positions for all devices.
 	 */
 	private _queryAllLastPositions(): void {
 		this.log.debug('(queryAllLastPositions#)');
 		// Example: Call an API method to get all last positions, then process them
-		this.log.debug (`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
+		this.log.debug(`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
 		if (typeof this.apiManager.getAllLastPositions === 'function') {
 			this.apiManager
 				.getAllLastPositions([1312315])
