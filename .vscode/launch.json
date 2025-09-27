@@ -1,31 +1,6 @@
 {
-	"version": "0.2.0",
+  "version": "0.2.0",
     "configurations": [
-        {
-            "request": "attach",
-            "name": "Attach to remote",
-            "port": 9229,
-			"resolveSourceMapLocations": [
-                "${workspaceFolder}/.dev-server/default/node_modules/**/*.js"
-            ],
-            "restart": true,
-            "type": "node"
-        },
-		{
-  			"type": "node",
-  			"request": "attach",
-  			"name": "Attach to ioBroker (9229)",
-  			"port": 9229,
-  			"restart": true,
-  			"timeout": 60000,
-  			"localRoot": "${workspaceFolder}/src",
-  			"remoteRoot": "/home/raschy/ioBroker.pajdr/src",
-  			"outFiles": [
-    			"${workspaceFolder}/build/**/*.js"
-  			],
-  			"sourceMaps": true,
-  			"skipFiles": ["<node_internals>/**"]
-		},
     	{
             "type": "node",
             "request": "launch",
@@ -34,12 +9,11 @@
             "args": ["--debug", "0"],
             "program": "node_modules/iobroker.pajdr/build/main.js",
             "cwd": "${workspaceFolder}/.dev-server/default",
-            "runtimeExecutable": "/usr/bin/node",
-            "stopOnEntry": false,
+            "stopOnEntry": true,
             "sourceMaps": true,
             "console": "internalConsole",
             "outputCapture": "std",
             "resolveSourceMapLocations": ["${workspaceFolder}/**" /* , "!*node_modules/**" */]
-        },
-    ],
+        }
+    ]
 }
