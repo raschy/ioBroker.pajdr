@@ -50,17 +50,16 @@ class TokenManager {
    * @throws {Error} If the token cannot be retrieved or refreshed.
    */
   async getAccessToken() {
-    this.adapter.log.debug("[getAccessToken#]");
+    this.adapter.log.silly("[getAccessToken#]");
     this.tokenData = await this.getStoredTokenData();
-    this.adapter.log.debug(
+    this.adapter.log.silly(
       `[getAccessToken] Loaded token (expires at: ${this.tokenData ? this.showTimeStamp(this.tokenData.expiresAt) : "N/A"})`
     );
     if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
-      this.adapter.log.debug("[getAccessToken] Token valid, returning.");
       return this.tokenData.accessToken;
     }
     if (this.refreshLock) {
-      this.adapter.log.debug("[getAccessToken] Refresh in progress, waiting...");
+      this.adapter.log.silly("[getAccessToken] Refresh in progress, waiting...");
       await this.refreshLock;
       if (this.tokenData && Date.now() < this.tokenData.expiresAt - 6e4) {
         this.adapter.log.debug("[getAccessToken] Got refreshed token after wait.");
@@ -69,13 +68,13 @@ class TokenManager {
       this.adapter.log.error("[getAccessToken] No valid token even after waiting!");
       throw new Error("Token refresh failed or timed out");
     }
-    this.adapter.log.debug("[getAccessToken] Starting exclusive token refresh...");
+    this.adapter.log.silly("[getAccessToken] Starting exclusive token refresh...");
     this.refreshLock = new Promise((resolve) => {
       this.releaseRefreshLock = resolve;
     });
     try {
       try {
-        this.adapter.log.info("[getAccessToken] Refreshing token via refresh_token...");
+        this.adapter.log.debug("[getAccessToken] Refreshing token via refresh_token...");
         this.tokenData = await this.getTokenWithRefreshtoken();
       } catch (error) {
         this.adapter.log.warn(
@@ -87,7 +86,7 @@ class TokenManager {
         throw new Error("Token refresh/login returned no data.");
       }
       await this.storeToken();
-      this.adapter.log.info("[getAccessToken] Token obtained successfully.");
+      this.adapter.log.debug("[getAccessToken] Token obtained successfully.");
       return this.tokenData.accessToken;
     } finally {
       const release = this.releaseRefreshLock;
@@ -119,7 +118,7 @@ class TokenManager {
       method: "POST",
       headers: { "Content-Type": "application/json" }
     });
-    this.adapter.log.info(`[getTokenWithLogin] Response: ${res.status} ${res.statusText}`);
+    this.adapter.log.debug(`[getTokenWithLogin] Response: ${res.status} ${res.statusText}`);
     if (!res.ok) {
       throw new Error(`Login failed: ${res.statusText}`);
     }
@@ -131,10 +130,8 @@ class TokenManager {
       accessToken: data.success.token,
       refreshToken: data.success.refresh_token,
       userId: data.success.userID,
-      //expiresAt: Date.now() + data.success.expires_in * 1000,
-      //expiresAt: Date.now() + 900000, // 15 Minuten Puffer
-      expiresAt: Date.now() + 864e5
-      // 24 Stunden
+      expiresAt: Date.now() + data.success.expires_in * 1e3
+      //expiresAt: Date.now() + 86400000, // 24 Stunden
     };
     return tokenData;
   }
@@ -162,7 +159,7 @@ class TokenManager {
       method: "POST",
       headers: { "Content-Type": "application/json" }
     });
-    this.adapter.log.info(`[getTokenWithRefreshtoken] Response: ${res.status} ${res.statusText}`);
+    this.adapter.log.silly(`[getTokenWithRefreshtoken] Response: ${res.status} ${res.statusText}`);
     if (!res.ok) {
       throw new Error(`Token refresh failed: ${res.statusText}`);
     }
@@ -174,10 +171,8 @@ class TokenManager {
       accessToken: data.success.token,
       refreshToken: data.success.refresh_token,
       userId: data.success.userID,
-      //expiresAt: Date.now() + data.success.expires_in * 1000,
-      //expiresAt: Date.now() + 900000, // 15 Minuten Puffer
-      expiresAt: Date.now() + 864e5
-      // 24 Stunden
+      expiresAt: Date.now() + data.success.expires_in * 1e3
+      //expiresAt: Date.now() + 86400000, // 24 Stunden
     };
     return tokenData;
   }
@@ -209,7 +204,7 @@ class TokenManager {
    * @throws {Error} If the login fails or the token data cannot be retrieved.
    */
   async initTokenData() {
-    this.adapter.log.debug("[initTokenData#]");
+    this.adapter.log.silly("[initTokenData#]");
     let tokenData = await this.getStoredTokenData();
     if (!tokenData) {
       try {
@@ -237,7 +232,7 @@ class TokenManager {
    * @throws {Error} If the token data cannot be retrieved.
    */
   async getStoredTokenData() {
-    this.adapter.log.debug("[getStoredTokenData#]");
+    this.adapter.log.silly("[getStoredTokenData#]");
     return await this.adapter.getForeignObjectAsync(`system.adapter.${this.adapter.namespace}`).then((obj) => {
       if (obj && obj.native && obj.native.activeToken) {
         return {
@@ -270,7 +265,7 @@ class TokenManager {
    * @throws {Error} If the token data is not available.
    */
   getCustomerId() {
-    this.adapter.log.debug("[getCustomerId#]");
+    this.adapter.log.silly("[getCustomerId#]");
     const customerId = this.tokenData ? String(this.tokenData.userId) : void 0;
     if (customerId === void 0) {
       this.adapter.log.warn("[getCustomerId] No customer ID available in token data");

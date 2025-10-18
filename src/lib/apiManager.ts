@@ -24,12 +24,12 @@ export class ApiManager {
 	}
 
 	/**
-	 * @description Get Customer Data (explicit User-ID)
-	 * @returns The User-ID of the customer
+	 * @description Get Customer Data
+	 * @returns CustomerData
 	 */
-	async getCustomer(): Promise<number> {
+	async getCustomer(): Promise<CustomerData> {
 		const url = `${this.baseUrl}customer`;
-		this.adapter.log.debug(`[getCustomer] URL: ${url}`);
+		this.adapter.log.silly(`[getCustomer] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
 		try {
@@ -40,8 +40,6 @@ export class ApiManager {
 					'Content-Type': 'application/json',
 				},
 			});
-			//console.log('RESPONSE: ', response);
-			//console.log('Status: ', response.status);
 
 			if (!response.ok) {
 				throw new Error(`[getCustomer] Failed to retrieve data: ${response.statusText}`);
@@ -53,7 +51,7 @@ export class ApiManager {
 			//console.log('SUCCESS', dataSuccess);
 			const customerId: number = dataSuccess.id;
 			this.adapter.log.info(`[getCustomer] Customer ID: ${customerId}`);
-			return customerId;
+			return dataSuccess;
 		} catch (error: unknown) {
 			if (error instanceof Error) {
 				this.adapter.log.error(`[getCustomer] Error: ${error.message}`);
@@ -75,7 +73,7 @@ export class ApiManager {
 	 */
 	async getDevice(): Promise<DeviceData[]> {
 		const url = `${this.baseUrl}device`;
-		this.adapter.log.debug(`[getDevice] URL: ${url}`);
+		this.adapter.log.silly(`[getDevice] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
 		try {
@@ -86,7 +84,6 @@ export class ApiManager {
 					'Content-Type': 'application/json',
 				},
 			});
-			//console.log('RESPONSE: ', response);
 
 			if (!response.ok) {
 				throw new Error(`[getDevice] Failed to retrieve data: ${response.statusText}`);
@@ -94,24 +91,25 @@ export class ApiManager {
 
 			const raw = (await response.json()) as DeviceRaw;
 			//console.log('[getDevice] Raw: ', raw);
+
 			if (!raw.success || !Array.isArray(raw.success)) {
 				throw new Error('[getDevice] Invalid response format: success is not an array');
 			}
-			//console.log('[getDevice] Count: ', raw.number_of_records);
 			//
 			if (raw.number_of_records === 0) {
 				this.adapter.log.warn('[getDevice] No devices found');
 				return [];
 			}
+			this.adapter.log.info(`[getDevice] Number of devices: ${raw.number_of_records}`);
 			//
 			const deviceData: DeviceData[] = raw.success;
 			return deviceData;
 		} catch (error: unknown) {
 			if (error instanceof Error) {
-				console.error('[getDevice] Error:', error.message);
+				this.adapter.log.error('[getDevice] Error: ' + error.message);
 				throw error; // Fehler weiterwerfen, um den Aufrufer zu informieren
 			} else {
-				console.error('[getDevice] Unknown error:', error);
+				this.adapter.log.error('[getDevice] Unknown error: ' + String(error));
 				throw new Error('Unknown error occurred');
 			}
 		}
@@ -123,7 +121,7 @@ export class ApiManager {
 	 */
 	async getCarDeviceData(): Promise<CarData[]> {
 		const url = `${this.baseUrl}sdevice/car`;
-		this.adapter.log.debug(`[getCarDeviceData] URL: ${url}`);
+		this.adapter.log.silly(`[getCarDeviceData] URL: ${url}`);
 		const token: string = await this.tokenManager.getAccessToken();
 
 		try {
@@ -155,9 +153,45 @@ export class ApiManager {
 		}
 	}
 
+	async getTrackerdata(): Promise<number> {
+		const url = `${this.baseUrl}trackerdata/1312315/last_minutes?lastMinutes=240`;
+		this.adapter.log.silly(`[getTrackerdata] URL: ${url}`);
+		const token: string = await this.tokenManager.getAccessToken();
+
+		try {
+			const response = await fetch(url, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(`[getCarDeviceData] Failed to retrieve data: ${response.statusText}`);
+			}
+
+			const data: TrackerdataRaw = (await response.json()) as TrackerdataRaw;
+			//console.log('RAW', data);
+
+			this.adapter.log.info(`[getCustomer] Customer ID: ${data.number_of_correct_markers}`);
+			return data.number_of_correct_markers;
+
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				console.error('[getCarDeviceData] Error:', error.message);
+				throw error; // Rethrow error to inform caller
+			} else {
+				console.error('[getCarDeviceData] Unknown error:', error);
+				throw new Error('Unknown error occurred');
+			}
+		}
+	}
+
+
 	async getAllLastPositions(deviceIDs: number[], fromLastPoint = false): Promise<Position[]> {
 		const url = `${this.baseUrl}trackerdata/getalllastpositions`;
-		this.adapter.log.debug(`[getAllLastPositions] URL: ${url}`);
+		this.adapter.log.silly(`[getAllLastPositions] URL: ${url}`);
 
 		const token: string = await this.tokenManager.getAccessToken();
 
@@ -173,22 +207,12 @@ export class ApiManager {
 				body: JSON.stringify(payload),
 			});
 
-			this.adapter.log.debug(`[getAllLastPositions] PayLoad: ${JSON.stringify(payload)}`);
-			this.adapter.log.debug(`[getAllLastPositions] Response: ${JSON.stringify(response)}`);
-			//this.adapter.log.debug(`[getAllLastPositions] Response Body: ${JSON.stringify(await response.json())}`);
-
 			if (!response.ok) {
 				throw new Error(`[getAllLastPositions] Failed: ${response.status} ${response.statusText}`);
 			}
 
 			const data = (await response.json()) as GetAllLastPositionsResponse;
-
-			console.log(`[getAllLastPositions] DatA: ${JSON.stringify(data)}`);
-
-			// Logs der Positionen
-			for (const pos of data.success) {
-				this.adapter.log.info(`Position ID: ${pos.id}, Latitude: ${pos.lat}, Longitude: ${pos.lng}`);
-			}
+			this.adapter.log.info(`[getAllLastPositions] Number of records: ${data.number_of_records}`);
 
 			return data.success;
 		} catch (err: any) {

@@ -220,6 +220,7 @@ interface DeviceDeviceModels {
 	manual_link?: string | ManualLinkMap | null;
 	// Add other properties as needed
 }
+
 interface ManualLinkMap {
 	de?: string;
 	en?: string;
@@ -278,6 +279,31 @@ interface CarData {
 	driver: null;
 	device: object;
 	carDevice_id: number;
+}
+
+interface TrackerdataRaw{
+	success: Trackerdata[];
+	number_of_correct_markers: number;
+	faulty_markers: Trackerdata[];
+	number_of_faulty_markers: number;
+	total_distance: number;
+}
+
+interface Trackerdata{
+	id: string;
+	lat: number;
+	lng: number;
+	direction: number;
+	dateunix: number;
+	battery: number;
+	speed: number;
+	iddevice: number;
+	steps: number;
+	heartbeat: number;
+	accuracy: number;
+	wifi: string | null;
+	note: string | null;
+	upt: string | null;
 }
 
 interface Position {

@@ -9,7 +9,7 @@
             "args": ["--debug", "0"],
             "program": "node_modules/iobroker.pajdr/build/main.js",
             "cwd": "${workspaceFolder}/.dev-server/default",
-            "stopOnEntry": true,
+            "stopOnEntry": false,
             "sourceMaps": true,
             "console": "internalConsole",
             "outputCapture": "std",

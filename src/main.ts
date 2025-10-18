@@ -32,6 +32,7 @@ class Pajdr extends Adapter {
 	private dataUpdateInterval: NodeJS.Timeout | undefined;
 	private customerId: string | undefined;
 	private deviceId: string | undefined;
+	private trackerId: string[]| undefined;
 	//
 	/**
 	 * This method is called when the adapter starts.
@@ -39,12 +40,12 @@ class Pajdr extends Adapter {
 	 * and sets up the initial state of the adapter.
 	 */
 	async onReady(): Promise<void> {
-		this.log.info('Adapter is ready');
-		this.log.info(`#####  SERVER <-###-> TEST ${new Date().toISOString()}`);
-		console.log('Adapter startet ...');
+		this.log.debug('Adapter started');
+		//this.log.info(`#####  SERVER <-###-> TEST ${new Date().toISOString()}`);
+		//console.log('Adapter startet ...');
 
 		if (!this.config.email || !this.config.password) {
-			this.log.error('Email or password not set in configuration');
+			this.log.error('❌ Email or password not set in configuration');
 			return;
 		}
 		this.tokenManager = new TokenManager(this, this.config.email, this.config.password);
@@ -55,12 +56,13 @@ class Pajdr extends Adapter {
 			//
 			this.customerId = await this.tokenManager.getCustomerId();
 			if (this.customerId === undefined) {
-				this.log.error('Customer ID could not be retrieved');
+				this.log.error('❌ Customer ID could not be retrieved');
 			} else {
 				this.log.debug(`Got access token successfully`);
-				this.log.info(`customerId: ${this.customerId}`);
+				this.log.info(`✅ Recieved Customer ID: ${this.customerId}`);
 				await this.createCustomerFolder(this.customerId);
 				//
+				this.queryData();
 				//
 				await this.setupStart();
 			}
@@ -85,100 +87,194 @@ class Pajdr extends Adapter {
 		}
 	}
 
-	private queryData(): void {
+	private async queryData(): Promise<void> {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
-
+		
 		// API-Anfrage für Customer
-		this.apiManager
-			.getCustomer()
-			.then(customerId => {
-				this.log.info(`Queried Customer ID: ${customerId}`);
-				// You can also set the state with the queried data
-				//this.setState('customer.customerId', { val: customerId, ack: true });
-			})
-			.catch(error => {
-				this.log.error(`Error querying customer data: ${error.message}`);
-			});
+		try {
+			this.log.info('Requesting Customer Data from API...');
+			this.customerId = await this.queryGetCustomer();
+			this.log.info(`✅ Queried Customer ID: ${this.customerId}`);
+
+		} catch (error: any) {
+			this.log.error(`❌ Failed to load customer data: ${error.message}`);
+		}
+		//
 		// API-Anfrage für Device
-		this.queryGetDevice();
-		//this.deviceId = '1312315';
-		this.queryGetCarDeviceData();
-		//this.queryAllLastPositions();
+		try {
+			this.log.info('Requesting tracker IDs from API...');
+			this.trackerId = await this.queryGetDevice();
+
+			if (Array.isArray(this.trackerId) && this.trackerId.length > 0) {
+				this.log.info(`✅ Tracker IDs successfully loaded: ${this.trackerId.join(', ')}`);
+			} else {
+				this.log.warn('⚠️ No tracker IDs returned from API — check device configuration or credentials.');
+				this.trackerId = []; // fallback to empty array
+			}
+
+		} catch (error: any) {
+			this.log.error(`❌ Failed to load tracker IDs: ${error.message}`);
+			this.trackerId = []; // ensure it’s at least defined
+		}
+
+		//
+		//this.queryGetCarDeviceData();
+		//this.queryTrackerdata();
+		//
+		
+		// API-Anfrage für AllLastPositions
+		try {
+			this.log.info('Requesting AllLastPositions from API...');
+			const trackerIdsAsNumbers = (this.trackerId || []).map(id => Number(id)).filter(id => !isNaN(id));
+			this.log.debug(`Converted tracker IDs to numbers: [${trackerIdsAsNumbers.join(', ')}]`);
+			if (trackerIdsAsNumbers.length === 0) {
+				this.log.warn('No valid tracker IDs available to request positions.');
+				return;
+			}
+			this.queryAllLastPositions(trackerIdsAsNumbers);
+		} catch (error: any) {
+			this.log.error(`❌ Failed to load AllLastPositions: ${error.message}`);
+		}
 	}
 
-	private queryGetDevice(): void {
-		// This method is called when data should be requested
+	private async queryGetCustomer(): Promise<string | undefined> {
+		this.log.debug('(queryGetCustomer#)');
+		try {
+			const customer = await this.apiManager.getCustomer();
+			this.log.debug(`Customer ID: ${customer.id}, Name: ${customer.name}`);
+			if (this.customerId !== undefined) {
+				await createState(this, `${this.customerId}`, 'Company ID', customer.company_id, {
+						name: {
+							en: 'Company ID',
+							de: 'Unternehmens-ID',
+							nl: 'Bedrijfs-ID',
+							ru: 'Идентификатор компании',
+							pt: 'ID da Empresa',
+							it: 'ID dell\'Azienda',
+							fr: 'ID de l\'Entreprise',
+							es: 'ID de la Empresa',
+							pl: 'ID Firmy',
+							uk: 'Ідентифікатор компанії',
+							'zh-cn': '公司ID',
+						},
+				});
+				await createState(this, `${this.customerId}`, 'User Name', customer.name, {
+						name: {
+							en: 'User Name',
+							de: 'Benutzername',
+							nl: 'Gebruikersnaam',
+							ru: 'Имя пользователя',
+							pt: 'Nome de Usuário',
+							it: 'Nome Utente',
+							fr: 'Nom d\'Utilisateur',
+							es: 'Nombre de Usuario',
+							pl: 'Nazwa Użytkownika',
+							uk: 'Ім\'я користувача',
+							'zh-cn': '用户名',
+						},
+					});
+				await createState(this, `${this.customerId}`, 'Last Password Change', customer.last_password_change, {
+						name: {
+							en: 'Last Password Change',
+							de: 'Letzte Passwortänderung',
+							nl: 'Laatste Wachtwoordwijziging',
+							ru: 'Последнее изменение пароля',
+							pt: 'Última alteração de senha',
+							it: 'Ultima modifica della password',
+							fr: 'Dernière modification du mot de passe',
+							es: 'Última modificación de la contraseña',
+							pl: 'Ostatnia zmiana hasła',
+							uk: 'ID Пристрою',
+							'zh-cn': '设备ID',
+						},
+					});
+				await createState(this, `${this.customerId}`, 'User Email', customer.email, {
+						name: {
+							en: 'User Email',
+							de: 'Benutzer E-Mail',
+							nl: 'Gebruiker E-mail',
+							ru: 'Электронная почта пользователя',
+							pt: 'E-mail do usuário',
+							it: "E-mail dell'utente",
+							fr: "E-mail de l'utilisateur",
+							es: 'Correo electrónico del usuario',
+							pl: 'E-mail użytkownika',
+							uk: 'Електронна пошта користувача',
+							'zh-cn': '用户电子邮件',
+						},
+				});					
+				return String(customer.id);
+			} else {
+				this.log.warn('❌ Customer ID is undefined, cannot create structured state for device');
+			}
+		} catch (error: any) {
+			this.log.error(`Error querying device data: ${error.message}`);
+			return undefined;
+		}
+	}
+
+	private async queryGetDevice(): Promise<string[] | undefined> {
 		this.log.debug('(queryGetDevice#)');
-		// API-Request für CarDeviceData
-		this.apiManager
-			.getDevice()
-			.then(async DeviceData => {
-				// and here you can process the car data
-				// const manualLink = this.getLinkForManualLang(DeviceData[0].device_models?.[0]?.manual_link);
-				// Create a device for each DeviceData
-				for (const dev of DeviceData) {
-					this.log.debug(`Device ID: ${dev.id}, Name: ${dev.name}`);
-					// Create a channel for each car
-					if (this.customerId !== undefined) {
-						await createChannel(this, this.customerId, String(dev.id), {
-							en: 'Tracker Number',
-							de: 'Tracker Nummer',
-							ru: 'Трекер номер',
-							pt: 'Número do Rastreador',
-							nl: 'Trackernummer',
-							fr: 'Numéro de suivi',
-							it: 'Numero di Tracker',
-							es: 'Número de rastreador',
-							pl: 'Numer nadajnika',
-							uk: 'Номер трекера',
-							'zh-cn': '跟踪器编号',
-						});
-						await createState(this, `${this.customerId}.${String(dev.id)}`, 'IMEI', dev.imei, {
-							name: {
-								en: 'Device IMEI',
-								de: 'Geräte IMEI',
-								nl: 'Apparaat IMEI',
-								ru: 'IMEI устройства',
-								pt: 'IMEI do Dispositivo',
-								it: 'IMEI del Dispositivo',
-								fr: '"IMEI de l\'Appareil"',
-								es: 'IMEI del Dispositivo',
-								pl: 'IMEI Urządzenia',
-								uk: 'IMEI Пристрою',
-								'zh-cn': '设备IMEI',
-							},
-						});
-						await createState(
-							this,
-							`${this.customerId}.${String(dev.id)}`,
-							'Car Device ID',
-							dev.carDevice_id,
-							{
-								name: {
-									en: 'Car Device ID',
-									de: 'Fahrzeug ID',
-									nl: 'Auto ID',
-									ru: 'ID автомобиля',
-									pt: 'ID do Dispositivo',
-									it: 'ID del Dispositivo',
-									fr: '"ID de l\'Appareil"',
-									es: 'ID del Dispositivo',
-									pl: 'ID Urządzenia',
-									uk: 'ID Пристрою',
-									'zh-cn': '设备ID',
-								},
-							},
-						);
-						// //#return dev.id;
-					} else {
-						this.log.warn('customerId is undefined, cannot create structured state for device');
-					}
+		let trackerId: string[] = [];
+		try {
+			const DeviceData = await this.apiManager.getDevice();
+			for (const dev of DeviceData) {
+				this.log.debug(`Device ID: ${dev.id}, Name: ${dev.name}`);
+				if (this.customerId !== undefined) {
+					trackerId.push(String(dev.id));
+					await createChannel(this, this.customerId, String(dev.id), {
+						en: 'Tracker Number',
+						de: 'Tracker Nummer',
+						ru: 'Трекер номер',
+						pt: 'Número do Rastreador',
+						nl: 'Trackernummer',
+						fr: 'Numéro de suivi',
+						it: 'Numero di Tracker',
+						es: 'Número de rastreador',
+						pl: 'Numer nadajnika',
+						uk: 'Номер трекера',
+						'zh-cn': '跟踪器编号',
+					});
+					await createState(this, `${this.customerId}.${String(dev.id)}`, 'IMEI', dev.imei, {
+						name: {
+							en: 'Device IMEI',
+							de: 'Geräte IMEI',
+							nl: 'Apparaat IMEI',
+							ru: 'IMEI устройства',
+							pt: 'IMEI do Dispositivo',
+							it: 'IMEI del Dispositivo',
+							fr: '"IMEI de l\'Appareil"',
+							es: 'IMEI del Dispositivo',
+							pl: 'IMEI Urządzenia',
+							uk: 'IMEI Пристрою',
+							'zh-cn': '设备IMEI',
+						},
+					});
+					await createState(this, `${this.customerId}.${String(dev.id)}`, 'Car Device ID', dev.carDevice_id, {
+						name: {
+							en: 'Car Device ID',
+							de: 'Fahrzeug ID',
+							nl: 'Auto ID',
+							ru: 'ID автомобиля',
+							pt: 'ID do Dispositivo',
+							it: 'ID del Dispositivo',
+							fr: '"ID de l\'Appareil"',
+							es: 'ID del Dispositivo',
+							pl: 'ID Urządzenia',
+							uk: 'ID Пристрою',
+							'zh-cn': '设备ID',
+						},
+					});
+				} else {
+					this.log.warn('customerId is undefined, cannot create structured state for device');
 				}
-			})
-			.catch(error => {
-				this.log.error(`Error querying device data: ${error.message}`);
-			});
+			}
+			return trackerId;
+		} catch (error: any) {
+			this.log.error(`Error querying device data: ${error.message}`);
+			return undefined;
+		}
 	}
 
 	private queryGetCarDeviceData(): void {
@@ -294,48 +390,42 @@ class Pajdr extends Adapter {
 			});
 	}
 
-	private queryAllLastPositions(): void {
+	private queryTrackerdata(): void {
 		// This method is called when data should be requested
-		this.log.debug('(queryAllLastPositions#)');
-		this.log.debug(`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
+		this.log.debug('(queryTrackerdata#)');
+		this.log.debug(`Calling getTrackerdata from ApiManager with dummy device ID [${this.deviceId}]`);
 		// API-Request für CarDeviceData
 		this.apiManager
-			.getAllLastPositions([1312315])
+			.getTrackerdata()
+			.then(async data => {
+				// and here you can process the car data
+				this.log.debug(`Tracker Data: ${JSON.stringify(data)}`);
+			})
+			.catch(error => {
+				this.log.error(`Error querying tracker data: ${error.message}`);
+			});
+	}
+
+	private queryAllLastPositions(id: number[]): void {
+		// This method is called when data should be requested
+		this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(', ')}]`);
+		// API-Request für CarDeviceData
+		this.apiManager
+			.getAllLastPositions(id)
 			.then(async positions => {
 				// and here you can process the car data
 				for (const position of positions) {
 					//#console.log(`car: ${JSON.stringify(car)}`);
-					this.log.debug(`Position ID: 
-						${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
+					this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
 				}
 			})
 			.catch(error => {
 				this.log.error(`Error querying car device data: ${error.message}`);
 			});
+	
 	}
 
-	/**
-	 * Retrieves the last known positions for all devices.
-	 */
-	private _queryAllLastPositions(): void {
-		this.log.debug('(queryAllLastPositions#)');
-		// Example: Call an API method to get all last positions, then process them
-		this.log.debug(`Calling getAllLastPositions from ApiManager with dummy device ID [${this.deviceId}]`);
-		if (typeof this.apiManager.getAllLastPositions === 'function') {
-			this.apiManager
-				.getAllLastPositions([1312315])
-				.then((positions: any) => {
-					this.log.info(`Retrieved last positions: ${JSON.stringify(positions)}`);
-					// Process positions as needed
-				})
-				.catch((error: any) => {
-					this.log.error(`Error retrieving last positions: ${error.message}`);
-				});
-		} else {
-			this.log.warn('queryAllLastPositions API method is not implemented.');
-		}
-	}
-
+	
 	//	#### Helper ####
 	//
 
@@ -352,7 +442,7 @@ class Pajdr extends Adapter {
 			customerId === 'undefined' ||
 			customerId === 'null'
 		) {
-			this.log.warn('[createCustomerFolder] Invalid customerId');
+			this.log.warn('(createCustomerFolder) Invalid customerId');
 			return;
 		}
 
@@ -369,7 +459,7 @@ class Pajdr extends Adapter {
 			uk: 'Ідентифікатор клієнта',
 			'zh-cn': '客户ID',
 		});
-		this.log.debug(`[createCustomerFolder] Customer "${createdDevice}"`);
+		this.log.debug(`(createCustomerFolder) Customer "${createdDevice}"`);
 	}
 
 	private async setupStart(): Promise<void> {
@@ -403,7 +493,7 @@ class Pajdr extends Adapter {
 			// ...
 			callback();
 		} catch (e) {
-			this.log.debug(`[onUnload] ${JSON.stringify(e)}`);
+			this.log.debug(`(onUnload) ${JSON.stringify(e)}`);
 			callback();
 		}
 	}
