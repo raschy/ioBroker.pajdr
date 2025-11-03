@@ -9,6 +9,7 @@ class Pajdr extends import_adapter_core.Adapter {
       ...options,
       name: "pajdr"
     });
+    this.executionInterval = 5 * 60;
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
@@ -36,8 +37,8 @@ class Pajdr extends import_adapter_core.Adapter {
         this.log.debug(`Got access token successfully`);
         this.log.info(`\u2705 Recieved Customer ID: ${this.customerId}`);
         await this.createCustomerFolder(this.customerId);
-        this.queryData();
-        await this.setupStart();
+        await this.queryData();
+        this.startScheduler();
       }
     } catch (err) {
       this.log.error(`Authentication failed: ${err.message}`);
@@ -73,6 +74,7 @@ class Pajdr extends import_adapter_core.Adapter {
       this.log.error(`\u274C Failed to load tracker IDs: ${error.message}`);
       this.trackerId = [];
     }
+    this.queryGetCarDeviceData();
     try {
       this.log.info("Requesting AllLastPositions from API...");
       const trackerIdsAsNumbers = (this.trackerId || []).map((id) => Number(id)).filter((id) => !isNaN(id));
@@ -338,10 +340,60 @@ class Pajdr extends import_adapter_core.Adapter {
   }
   queryAllLastPositions(id) {
     this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(", ")}]`);
+    let lastPosition;
     this.apiManager.getAllLastPositions(id).then(async (positions) => {
       for (const position of positions) {
+        console.log(`[${this.customerId}] Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 1e4) / 1e4}, Longitude: ${Math.round(position.lng * 1e4) / 1e4}`);
         this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 1e4) / 1e4}, Longitude: ${Math.round(position.lng * 1e4) / 1e4}`);
+        lastPosition = position;
       }
+      if (!lastPosition) {
+        this.log.warn("No positions returned from API, skipping position state creation.");
+        return;
+      }
+      await (0, import_utils.createChannel)(this, String(this.customerId), "Position", {
+        en: "Position",
+        de: "Position",
+        ru: "\u041F\u043E\u0437\u0438\u0446\u0438\u044F",
+        pt: "Posi\xE7\xE3o",
+        nl: "Positie",
+        fr: "Position",
+        it: "Posizione",
+        es: "Posici\xF3n",
+        pl: "Pozycja",
+        uk: "\u041F\u043E\u0437\u0438\u0446\u0456\u044F",
+        "zh-cn": "\u4F4D\u7F6E"
+      });
+      await (0, import_utils.createState)(this, this.customerId + ".position", "Latitude", lastPosition.lat, {
+        name: {
+          en: "Latitude",
+          de: "Breitengrad",
+          nl: "Breedtegraad",
+          ru: "\u0428\u0438\u0440\u043E\u0442\u0430",
+          pt: "Latitude",
+          it: "Latitudine",
+          fr: "Position",
+          es: "Posici\xF3n",
+          pl: "Pozycja",
+          uk: "\u041F\u043E\u0437\u0438\u0446\u0456\u044F",
+          "zh-cn": "\u4F4D\u7F6E"
+        }
+      });
+      await (0, import_utils.createState)(this, this.customerId + ".position", "Longitude", lastPosition.lng, {
+        name: {
+          en: "Longitude",
+          de: "L\xE4ngengrad",
+          nl: "Lengtegraad",
+          ru: "\u0414\u043E\u043B\u0433\u043E\u0442\u0430",
+          pt: "Longitude",
+          it: "Longitudine",
+          fr: "Position",
+          es: "Posici\xF3n",
+          pl: "Pozycja",
+          uk: "\u041F\u043E\u0437\u0438\u0446\u0456\u044F",
+          "zh-cn": "\u4F4D\u7F6E"
+        }
+      });
     }).catch((error) => {
       this.log.error(`Error querying car device data: ${error.message}`);
     });
@@ -387,6 +439,20 @@ class Pajdr extends import_adapter_core.Adapter {
     });
     this.subscribeStates("Start");
   }
+  startScheduler() {
+    if (!this.executionInterval || this.executionInterval <= 0) {
+      this.log.warn("Execution interval is not valid. Using default of 60 seconds.");
+      this.executionInterval = 60;
+    }
+    this.dataUpdateInterval = this.setInterval(async () => {
+      try {
+        await this.queryData();
+      } catch (err) {
+        this.log.error(`Error in scheduler: ${err.message}`);
+      }
+    }, this.executionInterval * 1e3);
+    this.log.info(`Scheduler started, polling API every ${this.executionInterval} seconds.`);
+  }
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!
    *
@@ -395,7 +461,7 @@ class Pajdr extends import_adapter_core.Adapter {
   onUnload(callback) {
     try {
       if (this.dataUpdateInterval) {
-        clearTimeout(this.dataUpdateInterval);
+        this.clearInterval(this.dataUpdateInterval);
       }
       callback();
     } catch (e) {

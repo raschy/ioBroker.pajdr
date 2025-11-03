@@ -29,10 +29,14 @@ class Pajdr extends Adapter {
 		// this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 	}
-	private dataUpdateInterval: NodeJS.Timeout | undefined;
+	//private dataUpdateInterval: NodeJS.Timeout | null = null;
+	//private dataUpdateInterval: NodeJS.Timeout | undefined;
+	private dataUpdateInterval?: ReturnType<typeof this.setInterval>;
+	private executionInterval = 5 * 60; // Sekunden, oder später aus config auslesen
+
 	private customerId: string | undefined;
 	private deviceId: string | undefined;
-	private trackerId: string[]| undefined;
+	private trackerId: string[] | undefined;
 	//
 	/**
 	 * This method is called when the adapter starts.
@@ -62,9 +66,12 @@ class Pajdr extends Adapter {
 				this.log.info(`✅ Recieved Customer ID: ${this.customerId}`);
 				await this.createCustomerFolder(this.customerId);
 				//
-				this.queryData();
-				//
-				await this.setupStart();
+				//##this.queryData();
+				// timed request
+				// Ersten Lauf sofort
+    			await this.queryData();
+    			// Danach zyklisch
+    			this.startScheduler();
 			}
 		} catch (err: any) {
 			this.log.error(`Authentication failed: ${err.message}`);
@@ -119,7 +126,7 @@ class Pajdr extends Adapter {
 		}
 
 		//
-		//this.queryGetCarDeviceData();
+		this.queryGetCarDeviceData();
 		//this.queryTrackerdata();
 		//
 		
@@ -406,24 +413,76 @@ class Pajdr extends Adapter {
 			});
 	}
 
-	private queryAllLastPositions(id: number[]): void {
-		// This method is called when data should be requested
-		this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(', ')}]`);
-		// API-Request für CarDeviceData
-		this.apiManager
-			.getAllLastPositions(id)
-			.then(async positions => {
-				// and here you can process the car data
-				for (const position of positions) {
-					//#console.log(`car: ${JSON.stringify(car)}`);
-					this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
-				}
-			})
-			.catch(error => {
-				this.log.error(`Error querying car device data: ${error.message}`);
+private queryAllLastPositions(id: number[]): void {
+	// This method is called when data should be requested
+	this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(', ')}]`);
+	let lastPosition: Trackerdata | undefined;
+	// API-Request für CarDeviceData
+	this.apiManager
+		.getAllLastPositions(id)
+		.then(async positions => {
+			// and here you can process the car data
+			for (const position of positions) {
+				console.log(`[${this.customerId}] Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
+				this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
+				lastPosition = position;
+			}
+
+			if (!lastPosition) {
+				this.log.warn('No positions returned from API, skipping position state creation.');
+				return;
+			}
+
+			await createChannel(this, String(this.customerId), 'Position', {
+				en: 'Position',
+				de: 'Position',
+				ru: 'Позиция',
+				pt: 'Posição',
+				nl: 'Positie',
+				fr: 'Position',
+				it: 'Posizione',
+				es: 'Posición',
+				pl: 'Pozycja',
+				uk: 'Позиція',
+				'zh-cn': '位置',
 			});
-	
-	}
+
+			await createState(this, this.customerId+'.position', 'Latitude', lastPosition.lat, {
+				name: {
+					en: 'Latitude',
+					de: 'Breitengrad',
+					nl: 'Breedtegraad',
+					ru: 'Широта',
+					pt: 'Latitude',
+					it: 'Latitudine',
+					fr: 'Position',
+					es: 'Posición',
+					pl: 'Pozycja',
+					uk: 'Позиція',
+					'zh-cn': '位置',
+				},
+			});
+			await createState(this, this.customerId+'.position', 'Longitude', lastPosition.lng, {
+				name: {
+					en: 'Longitude',
+					de: 'Längengrad',
+					nl: 'Lengtegraad',
+					ru: 'Долгота',
+					pt: 'Longitude',
+					it: 'Longitudine',
+					fr: 'Position',
+					es: 'Posición',
+					pl: 'Pozycja',
+					uk: 'Позиція',
+					'zh-cn': '位置',
+				},
+			});
+		})
+		.catch(error => {
+			this.log.error(`Error querying car device data: ${error.message}`);
+		});
+
+}
 
 	
 	//	#### Helper ####
@@ -479,6 +538,23 @@ class Pajdr extends Adapter {
 		this.subscribeStates('Start'); // for requesting data
 	}
 
+	private startScheduler(): void {
+    	if (!this.executionInterval || this.executionInterval <= 0) {
+        	this.log.warn("Execution interval is not valid. Using default of 60 seconds.");
+       		this.executionInterval = 60;
+    	}
+
+    	this.dataUpdateInterval = this.setInterval(async () => {
+        	try {
+            	await this.queryData();
+        	} catch (err: any) {
+            	this.log.error(`Error in scheduler: ${err.message}`);
+        	}
+    	}, this.executionInterval * 1000);
+
+    	this.log.info(`Scheduler started, polling API every ${this.executionInterval} seconds.`);
+	}
+
 	/**
 	 * Is called when adapter shuts down - callback has to be called under any circumstances!
 	 *
@@ -487,9 +563,15 @@ class Pajdr extends Adapter {
 	private onUnload(callback: () => void): void {
 		try {
 			// Here you must clear all timeouts or intervals that may still be active
-			if (this.dataUpdateInterval) {
-				clearTimeout(this.dataUpdateInterval);
+			/*
+			if (this.dataUpdateInterval !== null) {
+				clearInterval(this.dataUpdateInterval);
+				this.dataUpdateInterval = null;
 			}
+			*/
+			if (this.dataUpdateInterval) {
+            this.clearInterval(this.dataUpdateInterval);
+        	}
 			// ...
 			callback();
 		} catch (e) {
