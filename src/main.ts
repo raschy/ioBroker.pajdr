@@ -477,6 +477,23 @@ private queryAllLastPositions(id: number[]): void {
 					'zh-cn': '位置',
 				},
 			});
+			
+			await createState(this, this.customerId+'.position', 'Speed', lastPosition.speed, {
+				name: {
+					en: 'Speed',
+					de: 'Geschwindigkeit',
+					nl: 'Snelheid',
+					ru: 'Скорость',
+					pt: 'Velocidade',
+					it: 'Velocità',
+					fr: 'Vitesse',
+					es: 'Velocidad',
+					pl: 'Prędkość',
+					uk: 'Швидкість',
+					'zh-cn': '速度',
+				},
+			});
+
 		})
 		.catch(error => {
 			this.log.error(`Error querying car device data: ${error.message}`);

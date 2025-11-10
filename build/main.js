@@ -394,6 +394,21 @@ class Pajdr extends import_adapter_core.Adapter {
           "zh-cn": "\u4F4D\u7F6E"
         }
       });
+      await (0, import_utils.createState)(this, this.customerId + ".position", "Speed", lastPosition.speed, {
+        name: {
+          en: "Speed",
+          de: "Geschwindigkeit",
+          nl: "Snelheid",
+          ru: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C",
+          pt: "Velocidade",
+          it: "Velocit\xE0",
+          fr: "Vitesse",
+          es: "Velocidad",
+          pl: "Pr\u0119dko\u015B\u0107",
+          uk: "\u0428\u0432\u0438\u0434\u043A\u0456\u0441\u0442\u044C",
+          "zh-cn": "\u901F\u5EA6"
+        }
+      });
     }).catch((error) => {
       this.log.error(`Error querying car device data: ${error.message}`);
     });
