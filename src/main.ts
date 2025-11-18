@@ -45,8 +45,6 @@ class Pajdr extends Adapter {
 	 */
 	async onReady(): Promise<void> {
 		this.log.debug('Adapter started');
-		//this.log.info(`#####  SERVER <-###-> TEST ${new Date().toISOString()}`);
-		//console.log('Adapter startet ...');
 
 		if (!this.config.email || !this.config.password) {
 			this.log.error('❌ Email or password not set in configuration');
@@ -477,7 +475,7 @@ private queryAllLastPositions(id: number[]): void {
 					'zh-cn': '位置',
 				},
 			});
-			
+
 			await createState(this, this.customerId+'.position', 'Speed', lastPosition.speed, {
 				name: {
 					en: 'Speed',
