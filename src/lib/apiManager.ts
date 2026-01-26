@@ -106,10 +106,10 @@ export class ApiManager {
 			return deviceData;
 		} catch (error: unknown) {
 			if (error instanceof Error) {
-				this.adapter.log.error('[getDevice] Error: ' + error.message);
+				this.adapter.log.error(`[getDevice] Error: ${error.message}`);
 				throw error; // Fehler weiterwerfen, um den Aufrufer zu informieren
 			} else {
-				this.adapter.log.error('[getDevice] Unknown error: ' + String(error));
+				this.adapter.log.error(`[getDevice] Unknown error: ${String(error)}`);
 				throw new Error('Unknown error occurred');
 			}
 		}
@@ -176,7 +176,6 @@ export class ApiManager {
 
 			this.adapter.log.info(`[getCustomer] Customer ID: ${data.number_of_correct_markers}`);
 			return data.number_of_correct_markers;
-
 		} catch (error: unknown) {
 			if (error instanceof Error) {
 				console.error('[getCarDeviceData] Error:', error.message);
@@ -187,7 +186,6 @@ export class ApiManager {
 			}
 		}
 	}
-
 
 	async getAllLastPositions(deviceIDs: number[], fromLastPoint = false): Promise<Position[]> {
 		const url = `${this.baseUrl}trackerdata/getalllastpositions`;

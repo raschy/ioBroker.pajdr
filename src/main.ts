@@ -67,9 +67,9 @@ class Pajdr extends Adapter {
 				//##this.queryData();
 				// timed request
 				// Ersten Lauf sofort
-    			await this.queryData();
-    			// Danach zyklisch
-    			this.startScheduler();
+				await this.queryData();
+				// Danach zyklisch
+				this.startScheduler();
 			}
 		} catch (err: any) {
 			this.log.error(`Authentication failed: ${err.message}`);
@@ -84,7 +84,7 @@ class Pajdr extends Adapter {
 			//
 			// API-Anfrage für Customer
 			console.log('############   API   ############');
-			this.queryData();
+			await this.queryData();
 			//
 			// Hier können Sie weitere API-Aufrufe oder Logik hinzufügen, die auf den Statusänderungen basieren.
 			// The state was deleted
@@ -95,13 +95,12 @@ class Pajdr extends Adapter {
 	private async queryData(): Promise<void> {
 		// This method is called when data should be requested
 		this.log.debug('(queryData#)');
-		
+
 		// API-Anfrage für Customer
 		try {
 			this.log.info('Requesting Customer Data from API...');
 			this.customerId = await this.queryGetCustomer();
 			this.log.info(`✅ Queried Customer ID: ${this.customerId}`);
-
 		} catch (error: any) {
 			this.log.error(`❌ Failed to load customer data: ${error.message}`);
 		}
@@ -117,7 +116,6 @@ class Pajdr extends Adapter {
 				this.log.warn('⚠️ No tracker IDs returned from API — check device configuration or credentials.');
 				this.trackerId = []; // fallback to empty array
 			}
-
 		} catch (error: any) {
 			this.log.error(`❌ Failed to load tracker IDs: ${error.message}`);
 			this.trackerId = []; // ensure it’s at least defined
@@ -127,7 +125,7 @@ class Pajdr extends Adapter {
 		this.queryGetCarDeviceData();
 		//this.queryTrackerdata();
 		//
-		
+
 		// API-Anfrage für AllLastPositions
 		try {
 			this.log.info('Requesting AllLastPositions from API...');
@@ -150,69 +148,68 @@ class Pajdr extends Adapter {
 			this.log.debug(`Customer ID: ${customer.id}, Name: ${customer.name}`);
 			if (this.customerId !== undefined) {
 				await createState(this, `${this.customerId}`, 'Company ID', customer.company_id, {
-						name: {
-							en: 'Company ID',
-							de: 'Unternehmens-ID',
-							nl: 'Bedrijfs-ID',
-							ru: 'Идентификатор компании',
-							pt: 'ID da Empresa',
-							it: 'ID dell\'Azienda',
-							fr: 'ID de l\'Entreprise',
-							es: 'ID de la Empresa',
-							pl: 'ID Firmy',
-							uk: 'Ідентифікатор компанії',
-							'zh-cn': '公司ID',
-						},
+					name: {
+						en: 'Company ID',
+						de: 'Unternehmens-ID',
+						nl: 'Bedrijfs-ID',
+						ru: 'Идентификатор компании',
+						pt: 'ID da Empresa',
+						it: "ID dell'Azienda",
+						fr: "ID de l'Entreprise",
+						es: 'ID de la Empresa',
+						pl: 'ID Firmy',
+						uk: 'Ідентифікатор компанії',
+						'zh-cn': '公司ID',
+					},
 				});
 				await createState(this, `${this.customerId}`, 'User Name', customer.name, {
-						name: {
-							en: 'User Name',
-							de: 'Benutzername',
-							nl: 'Gebruikersnaam',
-							ru: 'Имя пользователя',
-							pt: 'Nome de Usuário',
-							it: 'Nome Utente',
-							fr: 'Nom d\'Utilisateur',
-							es: 'Nombre de Usuario',
-							pl: 'Nazwa Użytkownika',
-							uk: 'Ім\'я користувача',
-							'zh-cn': '用户名',
-						},
-					});
+					name: {
+						en: 'User Name',
+						de: 'Benutzername',
+						nl: 'Gebruikersnaam',
+						ru: 'Имя пользователя',
+						pt: 'Nome de Usuário',
+						it: 'Nome Utente',
+						fr: "Nom d'Utilisateur",
+						es: 'Nombre de Usuario',
+						pl: 'Nazwa Użytkownika',
+						uk: "Ім'я користувача",
+						'zh-cn': '用户名',
+					},
+				});
 				await createState(this, `${this.customerId}`, 'Last Password Change', customer.last_password_change, {
-						name: {
-							en: 'Last Password Change',
-							de: 'Letzte Passwortänderung',
-							nl: 'Laatste Wachtwoordwijziging',
-							ru: 'Последнее изменение пароля',
-							pt: 'Última alteração de senha',
-							it: 'Ultima modifica della password',
-							fr: 'Dernière modification du mot de passe',
-							es: 'Última modificación de la contraseña',
-							pl: 'Ostatnia zmiana hasła',
-							uk: 'ID Пристрою',
-							'zh-cn': '设备ID',
-						},
-					});
+					name: {
+						en: 'Last Password Change',
+						de: 'Letzte Passwortänderung',
+						nl: 'Laatste Wachtwoordwijziging',
+						ru: 'Последнее изменение пароля',
+						pt: 'Última alteração de senha',
+						it: 'Ultima modifica della password',
+						fr: 'Dernière modification du mot de passe',
+						es: 'Última modificación de la contraseña',
+						pl: 'Ostatnia zmiana hasła',
+						uk: 'ID Пристрою',
+						'zh-cn': '设备ID',
+					},
+				});
 				await createState(this, `${this.customerId}`, 'User Email', customer.email, {
-						name: {
-							en: 'User Email',
-							de: 'Benutzer E-Mail',
-							nl: 'Gebruiker E-mail',
-							ru: 'Электронная почта пользователя',
-							pt: 'E-mail do usuário',
-							it: "E-mail dell'utente",
-							fr: "E-mail de l'utilisateur",
-							es: 'Correo electrónico del usuario',
-							pl: 'E-mail użytkownika',
-							uk: 'Електронна пошта користувача',
-							'zh-cn': '用户电子邮件',
-						},
-				});					
+					name: {
+						en: 'User Email',
+						de: 'Benutzer E-Mail',
+						nl: 'Gebruiker E-mail',
+						ru: 'Электронная почта пользователя',
+						pt: 'E-mail do usuário',
+						it: "E-mail dell'utente",
+						fr: "E-mail de l'utilisateur",
+						es: 'Correo electrónico del usuario',
+						pl: 'E-mail użytkownika',
+						uk: 'Електронна пошта користувача',
+						'zh-cn': '用户电子邮件',
+					},
+				});
 				return String(customer.id);
-			} else {
-				this.log.warn('❌ Customer ID is undefined, cannot create structured state for device');
 			}
+			this.log.warn('❌ Customer ID is undefined, cannot create structured state for device');
 		} catch (error: any) {
 			this.log.error(`Error querying device data: ${error.message}`);
 			return undefined;
@@ -221,7 +218,7 @@ class Pajdr extends Adapter {
 
 	private async queryGetDevice(): Promise<string[] | undefined> {
 		this.log.debug('(queryGetDevice#)');
-		let trackerId: string[] = [];
+		const trackerId: string[] = [];
 		try {
 			const DeviceData = await this.apiManager.getDevice();
 			for (const dev of DeviceData) {
@@ -411,95 +408,96 @@ class Pajdr extends Adapter {
 			});
 	}
 
-private queryAllLastPositions(id: number[]): void {
-	// This method is called when data should be requested
-	this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(', ')}]`);
-	let lastPosition: Trackerdata | undefined;
-	// API-Request für CarDeviceData
-	this.apiManager
-		.getAllLastPositions(id)
-		.then(async positions => {
-			// and here you can process the car data
-			for (const position of positions) {
-				console.log(`[${this.customerId}] Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
-				this.log.debug(`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`);
-				lastPosition = position;
-			}
+	private queryAllLastPositions(id: number[]): void {
+		// This method is called when data should be requested
+		this.log.debug(`Calling getAllLastPositions from ApiManager with device IDs [${id.join(', ')}]`);
+		let lastPosition: Trackerdata | undefined;
+		// API-Request für CarDeviceData
+		this.apiManager
+			.getAllLastPositions(id)
+			.then(async positions => {
+				// and here you can process the car data
+				for (const position of positions) {
+					console.log(
+						`[${this.customerId}] Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`,
+					);
+					this.log.debug(
+						`Position ID: ${position.id}, Latitude: ${Math.round(position.lat * 10000) / 10000}, Longitude: ${Math.round(position.lng * 10000) / 10000}`,
+					);
+					lastPosition = position;
+				}
 
-			if (!lastPosition) {
-				this.log.warn('No positions returned from API, skipping position state creation.');
-				return;
-			}
+				if (!lastPosition) {
+					this.log.warn('No positions returned from API, skipping position state creation.');
+					return;
+				}
 
-			await createChannel(this, String(this.customerId), 'Position', {
-				en: 'Position',
-				de: 'Position',
-				ru: 'Позиция',
-				pt: 'Posição',
-				nl: 'Positie',
-				fr: 'Position',
-				it: 'Posizione',
-				es: 'Posición',
-				pl: 'Pozycja',
-				uk: 'Позиція',
-				'zh-cn': '位置',
-			});
-
-			await createState(this, this.customerId+'.position', 'Latitude', lastPosition.lat, {
-				name: {
-					en: 'Latitude',
-					de: 'Breitengrad',
-					nl: 'Breedtegraad',
-					ru: 'Широта',
-					pt: 'Latitude',
-					it: 'Latitudine',
+				await createChannel(this, String(this.customerId), 'Position', {
+					en: 'Position',
+					de: 'Position',
+					ru: 'Позиция',
+					pt: 'Posição',
+					nl: 'Positie',
 					fr: 'Position',
+					it: 'Posizione',
 					es: 'Posición',
 					pl: 'Pozycja',
 					uk: 'Позиція',
 					'zh-cn': '位置',
-				},
+				});
+
+				await createState(this, `${this.customerId}.position`, 'Latitude', lastPosition.lat, {
+					name: {
+						en: 'Latitude',
+						de: 'Breitengrad',
+						nl: 'Breedtegraad',
+						ru: 'Широта',
+						pt: 'Latitude',
+						it: 'Latitudine',
+						fr: 'Position',
+						es: 'Posición',
+						pl: 'Pozycja',
+						uk: 'Позиція',
+						'zh-cn': '位置',
+					},
+				});
+				await createState(this, `${this.customerId}.position`, 'Longitude', lastPosition.lng, {
+					name: {
+						en: 'Longitude',
+						de: 'Längengrad',
+						nl: 'Lengtegraad',
+						ru: 'Долгота',
+						pt: 'Longitude',
+						it: 'Longitudine',
+						fr: 'Position',
+						es: 'Posición',
+						pl: 'Pozycja',
+						uk: 'Позиція',
+						'zh-cn': '位置',
+					},
+				});
+
+				await createState(this, `${this.customerId}.position`, 'Speed', lastPosition.speed, {
+					name: {
+						en: 'Speed',
+						de: 'Geschwindigkeit',
+						nl: 'Snelheid',
+						ru: 'Скорость',
+						pt: 'Velocidade',
+						it: 'Velocità',
+						fr: 'Vitesse',
+						es: 'Velocidad',
+						pl: 'Prędkość',
+						uk: 'Швидкість',
+						'zh-cn': '速度',
+					},
+				});
+			})
+			.catch(error => {
+				this.log.error(`Error querying car device data: ${error.message}`);
 			});
-			await createState(this, this.customerId+'.position', 'Longitude', lastPosition.lng, {
-				name: {
-					en: 'Longitude',
-					de: 'Längengrad',
-					nl: 'Lengtegraad',
-					ru: 'Долгота',
-					pt: 'Longitude',
-					it: 'Longitudine',
-					fr: 'Position',
-					es: 'Posición',
-					pl: 'Pozycja',
-					uk: 'Позиція',
-					'zh-cn': '位置',
-				},
-			});
+	}
 
-			await createState(this, this.customerId+'.position', 'Speed', lastPosition.speed, {
-				name: {
-					en: 'Speed',
-					de: 'Geschwindigkeit',
-					nl: 'Snelheid',
-					ru: 'Скорость',
-					pt: 'Velocidade',
-					it: 'Velocità',
-					fr: 'Vitesse',
-					es: 'Velocidad',
-					pl: 'Prędkość',
-					uk: 'Швидкість',
-					'zh-cn': '速度',
-				},
-			});
-
-		})
-		.catch(error => {
-			this.log.error(`Error querying car device data: ${error.message}`);
-		});
-
-}
-
-	
 	//	#### Helper ####
 	//
 
@@ -554,20 +552,20 @@ private queryAllLastPositions(id: number[]): void {
 	}
 
 	private startScheduler(): void {
-    	if (!this.executionInterval || this.executionInterval <= 0) {
-        	this.log.warn("Execution interval is not valid. Using default of 60 seconds.");
-       		this.executionInterval = 60;
-    	}
+		if (!this.executionInterval || this.executionInterval <= 0) {
+			this.log.warn('Execution interval is not valid. Using default of 60 seconds.');
+			this.executionInterval = 60;
+		}
 		this.log.info(`Using execution interval of ${this.executionInterval} seconds.`);
-    	this.dataUpdateInterval = this.setInterval(async () => {
-        	try {
-            	await this.queryData();
-        	} catch (err: any) {
-            	this.log.error(`Error in scheduler: ${err.message}`);
-        	}
-    	}, this.executionInterval * 1000);
+		this.dataUpdateInterval = this.setInterval(async () => {
+			try {
+				await this.queryData();
+			} catch (err: any) {
+				this.log.error(`Error in scheduler: ${err.message}`);
+			}
+		}, this.executionInterval * 1000);
 
-    	this.log.info(`Scheduler started, polling API every ${this.executionInterval} seconds.`);
+		this.log.info(`Scheduler started, polling API every ${this.executionInterval} seconds.`);
 	}
 
 	/**
@@ -585,8 +583,8 @@ private queryAllLastPositions(id: number[]): void {
 			}
 			*/
 			if (this.dataUpdateInterval) {
-            this.clearInterval(this.dataUpdateInterval);
-        	}
+				this.clearInterval(this.dataUpdateInterval);
+			}
 			// ...
 			callback();
 		} catch (e) {

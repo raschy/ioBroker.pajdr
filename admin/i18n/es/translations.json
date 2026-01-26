@@ -1,8 +1,8 @@
 {
-    "pajdr adapter settings": "Configuración del adaptador para Pajdr",
-    "email": "Correo electrónico",
-    "password": "Contraseña",
-    "email_description": "Dirección de correo electrónico utilizada para iniciar sesión en PAJ",
-    "password_description": "Contraseña utilizada para iniciar sesión en PAJ",
-    "credentials": "Cartas credenciales"
+	"credentials": "Cartas credenciales",
+	"email": "Correo electrónico",
+	"email_description": "Dirección de correo electrónico utilizada para iniciar sesión en PAJ",
+	"pajdr adapter settings": "Configuración del adaptador para Pajdr",
+	"password": "Contraseña",
+	"password_description": "Contraseña utilizada para iniciar sesión en PAJ"
 }

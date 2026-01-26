@@ -281,7 +281,7 @@ interface CarData {
 	carDevice_id: number;
 }
 
-interface TrackerdataRaw{
+interface TrackerdataRaw {
 	success: Trackerdata[];
 	number_of_correct_markers: number;
 	faulty_markers: Trackerdata[];
@@ -289,7 +289,7 @@ interface TrackerdataRaw{
 	total_distance: number;
 }
 
-interface Trackerdata{
+interface Trackerdata {
 	id: string;
 	lat: number;
 	lng: number;
