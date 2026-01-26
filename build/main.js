@@ -459,6 +459,7 @@ class Pajdr extends import_adapter_core.Adapter {
       this.log.warn("Execution interval is not valid. Using default of 60 seconds.");
       this.executionInterval = 60;
     }
+    this.log.info(`Using execution interval of ${this.executionInterval} seconds.`);
     this.dataUpdateInterval = this.setInterval(async () => {
       try {
         await this.queryData();

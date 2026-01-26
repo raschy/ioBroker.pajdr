@@ -558,7 +558,7 @@ private queryAllLastPositions(id: number[]): void {
         	this.log.warn("Execution interval is not valid. Using default of 60 seconds.");
        		this.executionInterval = 60;
     	}
-
+		this.log.info(`Using execution interval of ${this.executionInterval} seconds.`);
     	this.dataUpdateInterval = this.setInterval(async () => {
         	try {
             	await this.queryData();
