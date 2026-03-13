@@ -5,9 +5,7 @@
 	"title": "PAJ DataReader",
 	"description": "Read Data from PAJ-GPS-Portal",
 	"expert": "no",
-	"features": [
-		"adapter"
-	],
+	"features": ["adapter"],
 	"adminFeatures": [],
 	"type": "vehicle",
 	"startMode": "daemon",
@@ -17,10 +15,7 @@
 	"language": "TypeScript",
 	"nodeVersion": "18",
 	"adminUi": "json",
-	"tools": [
-		"ESLint",
-		"Prettier"
-	],
+	"tools": ["ESLint", "Prettier"],
 	"devServer": "yes",
 	"devServerPort": 8081,
 	"indentation": "Tab",

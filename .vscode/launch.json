@@ -1,19 +1,19 @@
 {
-  "version": "0.2.0",
-    "configurations": [
-    	{
-            "type": "node",
-            "request": "launch",
-            "name": "default Launch ioBroker Adapter ",
-            "skipFiles": ["<node_internals>/**"],
-            "args": ["--debug", "0"],
-            "program": "node_modules/iobroker.pajdr/build/main.js",
-            "cwd": "${workspaceFolder}/.dev-server/default",
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "console": "internalConsole",
-            "outputCapture": "std",
-            "resolveSourceMapLocations": ["${workspaceFolder}/**" /* , "!*node_modules/**" */]
-        }
-    ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "default Launch ioBroker Adapter ",
+			"skipFiles": ["<node_internals>/**"],
+			"args": ["--debug", "0"],
+			"program": "node_modules/iobroker.pajdr/build/main.js",
+			"cwd": "${workspaceFolder}/.dev-server/default",
+			"stopOnEntry": false,
+			"sourceMaps": true,
+			"console": "internalConsole",
+			"outputCapture": "std",
+			"resolveSourceMapLocations": ["${workspaceFolder}/**" /* , "!*node_modules/**" */]
+		}
+	]
 }

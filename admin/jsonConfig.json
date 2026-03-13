@@ -3,10 +3,10 @@
 	"type": "panel",
 	"items": {
 		"_header": {
-            "type": "header",
-            "text": "credentials",
-            "size": 1
-        },
+			"type": "header",
+			"text": "credentials",
+			"size": 1
+		},
 		"email": {
 			"type": "text",
 			"label": "email",

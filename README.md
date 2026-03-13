@@ -1,4 +1,5 @@
 ![Logo](admin/pajdr.png)
+
 # ioBroker.pajdr
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.pajdr.svg)](https://www.npmjs.com/package/iobroker.pajdr)
@@ -24,18 +25,20 @@ The same login details (email address and password) are required for functionali
 Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
 You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
 
-
 ## Changelog
+
 <!--
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
 ### 0.0.2 (2025-09-27)
 
 - (raschy) Framework with basic functions
 - (raschy) initial release
 
 ## License
+
 MIT License
 
 Copyright (c) 2025-2026 raschy <raschy@gmx.de>

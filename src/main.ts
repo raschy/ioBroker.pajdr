@@ -64,10 +64,16 @@ class Pajdr extends Adapter {
 				this.log.info(`✅ Recieved Customer ID: ${this.customerId}`);
 				await this.createCustomerFolder(this.customerId);
 				//
-				//##this.queryData();
-				// timed request
 				// Ersten Lauf sofort
-				await this.queryData();
+				void this.queryData();
+				//await this.queryData(); must be in try-catch to prevent unhandled promise rejection
+				/*
+				try {
+    				await this.queryData();
+				} catch (err) {
+    				this.log.error(`queryData failed: ${(err as Error).message}`);
+				}
+				*/
 				// Danach zyklisch
 				this.startScheduler();
 			}

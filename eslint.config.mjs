@@ -19,21 +19,23 @@ export default [
 			'admin/admin.d.ts',
 			'**/adapter-config.d.ts',
 			'**/adapter-config.d.ts',
-            'img',
-            'script',
-            'node_modules',
-            '.dev-data',
+			'img',
+			'script',
+			'node_modules',
+			'.dev-data',
 		],
 	},
 	{
 		// you may disable some 'jsdoc' warnings - but using jsdoc is highly recommended
 		// as this improves maintainability. jsdoc warnings will not block buiuld process.
-        rules: {
-            'jsdoc/require-jsdoc': 'off',
-            "require-await": "off",
-            "@typescript-eslint/require-await": "off",
-            "no-unused-vars": "off", // or "@typescript-eslint/no-unused-vars": "off",
-        },
+		rules: {
+			'jsdoc/require-jsdoc': 'off',
+			'require-await': 'off',
+			'@typescript-eslint/require-await': 'off',
+			'no-unused-vars': 'off', // or "@typescript-eslint/no-unused-vars": "off",
+			//'no-mixed-spaces-and-tabs': 'error'
+			'no-mixed-spaces-and-tabs': ['error', 'smart-tabs']
+		},
 		files: ['src/**/*.ts', 'main.ts'],
 	},
 ];
